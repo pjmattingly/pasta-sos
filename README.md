@@ -22,7 +22,7 @@ This tool is in an alpha state and will likely break. Please use the [Issues](ht
 
 1) Install `hotsos`; See: https://github.com/canonical/hotsos#install
 2) Install `multipass`; See: https://github.com/canonical/multipass#install-multipass
-3) Install `python` (developed with 3.10); see: https://www.python.org/downloads/
+3) Install `python`; `sudo apt install python3.10`; see: https://www.python.org/downloads/
 4) Install `pipenv`; see: https://packaging.python.org/en/latest/tutorials/managing-dependencies/#installing-pipenv
 6) Clone the repository `git clone https://github.com/pjmattingly/pasta-sos`; see: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository
 5) Install dependencies `pipenv install`; see: https://pipenv-fork.readthedocs.io/en/latest/basics.html
