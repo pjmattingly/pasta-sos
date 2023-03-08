@@ -21,17 +21,20 @@ This tool is in an alpha state and will likely break. Please use the [Issues](ht
 ## Install
 
 0) Start installation on Ubuntu Jammy (22.04) (A freshly installed virtual machine is recommended)
-1) Install `hotsos`; See: https://github.com/canonical/hotsos#install
-2) Install `multipass`; See: https://github.com/canonical/multipass#install-multipass
-3) Install `python`; `sudo apt install python3.10-venv`; see: https://www.python.org/downloads/
+1) Install `hotsos`; `sudo snap install hotsos --classic`; See: https://github.com/canonical/hotsos#install
+2) Install `multipass`; `sudo snap install multipass`; See: https://github.com/canonical/multipass#install-multipass
+3) Install `python` (with virtual environment support); `sudo apt install python3.10-venv`; see: https://www.python.org/downloads/
 4) Install `pip`; `sudo apt install python3-pip`; see: https://pip.pypa.io/en/stable/installation/
 5) Install `pipx`; `python3 -m pip install --user pipx` and `python3 -m pipx ensurepath`; see: https://pypi.org/project/pipx/
-6) Install `pipenv`; `python3 -m pip install --user pipenv`; see: https://packaging.python.org/en/latest/tutorials/managing-dependencies/#installing-pipenv <sup>1</sup>
-7) Clone the repository `git clone https://github.com/pjmattingly/pasta-sos`; see: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository
-8) Install dependencies `pipenv install`; see: https://pipenv-fork.readthedocs.io/en/latest/basics.html
-9) Run `pipenv run python main.py <path/to/sosreport folder>`
+6) Reload the shell to make `pipx` visible (exec "$SHELL")
+7) Install `pipenv`; `pipx install pipenv`; see: [https://packaging.python.org/en/latest/tutorials/managing-dependencies/#installing-pipenv](https://pypi.org/project/pipenv/#installation)<sup>1</sup>
+8) Clone the repository `git clone https://github.com/pjmattingly/pasta-sos`; see: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository
+9) Install dependencies `pipenv install`; see: https://pipenv-fork.readthedocs.io/en/latest/basics.html
+10) Run `pipenv run python main.py <path/to/sosreport folder>`
 
-<sup>1</sup> Note here we install with `python3` and NOT `apt`, as installing with `apt` causes this issue: https://github.com/pypa/pipenv/issues/5088.
+<sup>1</sup> Note here we install with `pipx` and NOT `apt`, as installing with `apt` causes this issue: https://github.com/pypa/pipenv/issues/5088.
+
+Note, that the installation follows this somewhat complex process to avoid a bug effecting Ubuntu Jammy (22.04) and Python 3.10 (https://github.com/pypa/pipenv/issues/5075).
 
 ## Cleanup
 
