@@ -27,7 +27,7 @@ This tool is in an alpha state and will likely break. Please use the [Issues](ht
 4) Install `pip`; `sudo apt install python3-pip`; see: https://pip.pypa.io/en/stable/installation/
 5) Install `pipx`; `python3 -m pip install --user pipx` and `python3 -m pipx ensurepath`; see: https://pypi.org/project/pipx/
 6) Reload the shell to make `pipx` visible (exec "$SHELL")
-7) Install `pipenv`; `pipx install pipenv`; see: [https://packaging.python.org/en/latest/tutorials/managing-dependencies/#installing-pipenv](https://pypi.org/project/pipenv/#installation)<sup>1</sup>
+7) Install `pipenv`; `pipx install pipenv`; see: https://pypi.org/project/pipenv/#installation<sup>1</sup>
 8) Clone the repository `git clone https://github.com/pjmattingly/pasta-sos`; see: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository
 9) Install dependencies `pipenv install`; see: https://pipenv-fork.readthedocs.io/en/latest/basics.html
 10) Run `pipenv run python main.py <path/to/sosreport folder>`
