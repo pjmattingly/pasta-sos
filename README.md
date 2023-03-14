@@ -39,7 +39,49 @@ Note, that the installation follows this somewhat complex process to avoid a bug
 ## Cleanup
 
 `pasta-sos` will create virtual machines with `multipass`. At this time there is no functionality for removing these virtual machines automatically. `pasta-sos` will report the names of the virtual machines it creates with output to STDOUT; Similar to: `Launched: <name of VM>`. Use the command `multipass delete <name of VM>` to remove the virtual machines it creates; You may also need to use `multipass purge` to remove deleted virtual machines from your system.
-  
+
+## Current work
+
+### v0.2.0
+
+In this iteration we use `deboostrap` to build chroot environments of any Ubuntu release; See: https://wiki.debian.org/Debootstrap.
+
+This approach builds off this sequence of steps:
+
+1) `sudo debootstrap --no-check-gpg <ubuntu release code name> <chroot directory>`
+2) Modify the chroot's `sources.list` to include legacy sources: `deb http://old-releases.ubuntu.com/ubuntu <ubuntu release code name> main universe multiverse restricted`
+3) Then, the environment inside the chroot directory can use `apt` normally to install packages
+(for example: `sudo chroot <chroot directory> apt-get update` then `sudo chroot <chroot directory> apt-get install -y apt-file`)
+
+Then using `apt` packages can be installed to match the configuration found in the `sosreport`.
+
+sources:
+  https://askubuntu.com/questions/1123021/the-packages-for-old-releases-are-not-available-anymore/1123049#1123049
+  https://help.ubuntu.com/community/EOLUpgrades
+  https://askubuntu.com/a/1123049
+  https://superuser.com/a/339572
+
+### v0.3.0
+
+In this iteration we build on the work done in v0.2.0 by injecting the chroot environment into a virtual machine.
+
+An approach is to:
+
+1) Make a file as a base for the image: `dd if=/dev/zero of=rootfs.img bs=1 count=0 seek=300M`
+2) Format the image `mkfs.ext4 -b <block size> -F rootfs.img`
+3) Copy the files from the chroot environment into the image
+4) Use QEMU to boot the image
+
+Other possible approaches include: 
+
+1) using Clonezilla to build the image from the chrooted environment
+2) using the `virt-p2v` tool to attempt to create an image based on the chrooted environment
+
+src:
+  https://wiki.ubuntu.com/ARM/RootfsFromScratch/QemuDebootstrap
+  https://en.wikipedia.org/wiki/Clonezilla
+  https://manpages.ubuntu.com/manpages/jammy/man1/virt-p2v.1.html
+ 
 ## Future
 
 I believe the first order of business cloning installed packages. That is, `sosreport` gathers information about installed packages on a client machine. Thus, a means of installing (approximately) identical packages to a `pasta-sos` virtual machine would be helpful in troubleshooting difficult to reproduce issues.<sup>1</sup>
