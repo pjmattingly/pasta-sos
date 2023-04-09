@@ -21,7 +21,7 @@ import sys
 
 class Sosreport_Not_Found(Exception): pass
 class Sosreport_Unreadable(Exception): pass
-class Sosreport_Error(Exception): pass
+class Not_Sosreport(Exception): pass
 
 class Not_Running_As_Root(Exception): pass
 
@@ -63,6 +63,11 @@ def assert_running_as_root():
         https://stackoverflow.com/questions/2806897/what-is-the-best-way-for-checking-if-the-user-of-a-script-has-root-like-privileg
     '''
     if not os.environ.get("SUDO_UID") and os.geteuid() != 0: raise Not_Running_As_Root("Please run with root priviledges.")
+
+def assert_is_sosreport(path):
+    res = subprocess.run( ['hotsos', path], capture_output=True)
+
+    if res.returncode != 0: raise Not_Sosreport(f"This folder is not a sosreport: {path}")
 
 '''
 def get_version_number_from_sosreport(path):
@@ -111,7 +116,7 @@ if __name__ == '__main__':
     sosreport_path_check(sosreport_path)
 
     #check if actually an sosreport
-
+    assert_is_sosreport(sosreport_path)
 
     #code_name = get_ubuntu_code_name_from_sosreport(sosreport_path)
 
