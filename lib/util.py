@@ -10,7 +10,7 @@ import os
 class Bad_Input(Exception): pass
 class Bad_Target(Exception): pass
 
-def make_rootfs(source_dir, output_dir):
+def tar_gzip(source_dir, output_dir):
     '''
     Given a directory, create a compressed archive of that directory named "rootfs.tar.gz" in output_dir
     see: https://stackoverflow.com/a/17081026
