@@ -18,7 +18,7 @@ def make_rootfs(source_dir, output_dir):
     _in = Path(source_dir)
     _out = Path(output_dir)
 
-    if not ( _in.exists() and _in.is_dir() ): raise Bad_Input(f"Could not compress '{_in.resolve()}' into a rootfs.")
+    if not ( _in.exists() and _in.is_dir() ): raise Bad_Input(f"Could not compress '{_in.resolve()}' into a rootfs archive.")
     if not ( _out.exists() and _in.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise Bad_Target(f"Cannot write rootfs to '{_out.resolve()}'.")
 
     _out = _out / "rootfs.tar.gz"
