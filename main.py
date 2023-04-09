@@ -28,6 +28,8 @@ class Not_Sosreport(Exception): pass
 
 class Not_Running_As_Root(Exception): pass
 
+class Debootstrap_Not_Installed(Exception): pass
+
 class Unknown_Error(Exception): pass
 
 #----
@@ -107,6 +109,7 @@ def check_done(res):
 
 if __name__ == '__main__':
     assert_running_as_root()
+    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' such that the root user can run it.")
     
     #parsing CLI arguments
     parser = argparse.ArgumentParser(description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
@@ -126,6 +129,8 @@ if __name__ == '__main__':
     #with the distro code-name in hand, make the chroot
     #(provided it's a real distro)
     chroot_path = dh.make_chroot_for_distro(distro)
+
+    #then with the path to the chroot, make a compressed archive of it
 
 
 
