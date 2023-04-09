@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+import os
 
 class Bad_Distro(Exception): pass
 
@@ -34,8 +35,22 @@ def _make_chroot(distro):
     global _chroot
     _chroot = tempfile.TemporaryDirectory()
     chroot_path = str(Path(_chroot.name))
+    chroot_path = chroot_path / str(distro) #name the chroot directory after the distro we want
+
+    '''
+    ISSUE
+    debootstrap, when fetching files, will leave wget log files in the directory it's operating in
+    it doesn't seem to have an option to cleanup those files
+    so instead, change the excution directory before debootstrap runs, so that the log files end up
+    in /tmp
+    '''
+    _prev = os.getcwd()
+    os.chdir(chroot_path)
     
     res = subprocess.run(['sudo', 'debootstrap', '--no-check-gpg', str(distro), chroot_path], capture_output=True)
+
+    #then return to where the program was originally executed from
+    os.chdir(_prev)
 
     if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
 
@@ -56,4 +71,7 @@ def _modify_chroot_sources_list(chroot_path, distro):
     sources_list_path = Path(chroot_path) / "etc" / "apt" / "sources.list"
     '''
 
-make_chroot_for_distro("hardy")
+#DEBUG
+#chroot_path = _make_chroot("hardy")
+#res = subprocess.run(['ls', chroot_path], capture_output=True)
+#print(res)
