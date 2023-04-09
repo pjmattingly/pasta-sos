@@ -8,6 +8,7 @@ import os
 import subprocess
 
 import lib.debootstrap_handler as dh
+import lib.util as util
 
 from yaml import load, dump
 try:
@@ -131,8 +132,10 @@ if __name__ == '__main__':
     chroot_path = dh.make_chroot_for_distro(distro)
 
     #then with the path to the chroot, make a compressed archive of it
+    _target = Path(chroot_path).parent
+    archive_path = util.tar_gzip(chroot_path, _target)
 
-
+    print(archive_path)
 
 
 
