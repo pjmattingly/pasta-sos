@@ -34,8 +34,7 @@ def _make_chroot(distro):
     
     global _chroot
     _chroot = tempfile.TemporaryDirectory()
-    chroot_path = str(Path(_chroot.name))
-    chroot_path = chroot_path / str(distro) #name the chroot directory after the distro we want
+    chroot_path = Path(_chroot.name) / str(distro) #name the chroot directory after the distro we want
 
     '''
     ISSUE
@@ -45,16 +44,16 @@ def _make_chroot(distro):
     in /tmp
     '''
     _prev = os.getcwd()
-    os.chdir(chroot_path)
+    os.chdir(Path(_chroot.name))
     
-    res = subprocess.run(['sudo', 'debootstrap', '--no-check-gpg', str(distro), chroot_path], capture_output=True)
+    res = subprocess.run(['sudo', 'debootstrap', '--no-check-gpg', str(distro), str(chroot_path)], capture_output=True)
 
     #then return to where the program was originally executed from
     os.chdir(_prev)
 
     if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
 
-    return chroot_path
+    return str(chroot_path)
 
 def _modify_chroot_sources_list(chroot_path, distro):
     '''
