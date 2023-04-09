@@ -9,6 +9,7 @@ import subprocess
 
 import lib.debootstrap_handler as dh
 import lib.util as util
+import lib.lxc_handler as lh
 
 from yaml import load, dump
 try:
@@ -30,6 +31,7 @@ class Not_Sosreport(Exception): pass
 class Not_Running_As_Root(Exception): pass
 
 class Debootstrap_Not_Installed(Exception): pass
+class LXC_Not_Installed(Exception): pass
 
 class Unknown_Error(Exception): pass
 
@@ -111,6 +113,7 @@ def check_done(res):
 if __name__ == '__main__':
     assert_running_as_root()
     if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' such that the root user can run it.")
+    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' such that the root user can run it.")
     
     #parsing CLI arguments
     parser = argparse.ArgumentParser(description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
