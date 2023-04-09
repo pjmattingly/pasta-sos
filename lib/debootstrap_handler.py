@@ -54,23 +54,3 @@ def _make_chroot(distro):
     if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
 
     return str(chroot_path)
-
-def _modify_chroot_sources_list(chroot_path, distro):
-    '''
-    Modify the sources.list of a chroot environment (at `path`) to point to `old-releases.ubuntu.com`
-    We do this so that the chroot environments can pull packages that are appropriate for their older environments
-        see:
-        https://askubuntu.com/questions/1123021/the-packages-for-old-releases-are-not-available-anymore/1123049#1123049
-
-    as of `debootstrap 1.0.126+nmu1ubuntu0.2` the sources.list of generated chroot for older releases seems to be set to `old-releases.ubuntu.com` correctly
-    while chroot directories for more modern distros are correctly set to `archive.ubuntu.com` as well
-    '''
-    
-    '''
-    sources_list_path = Path(chroot_path) / "etc" / "apt" / "sources.list"
-    '''
-
-#DEBUG
-#chroot_path = _make_chroot("hardy")
-#res = subprocess.run(['ls', chroot_path], capture_output=True)
-#print(res)
