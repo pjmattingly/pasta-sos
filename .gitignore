@@ -1,3 +1,5 @@
 sosreport-veteran-margay-test-42-2023-02-26-yevmkut/*
 sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
 Pipfile.lock
+lib/test/*
+main copy.py
