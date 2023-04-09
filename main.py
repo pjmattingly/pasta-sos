@@ -6,6 +6,9 @@ import argparse
 from pathlib import Path
 import os
 import subprocess
+
+import lib.debootstrap_handler as dh
+
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -110,13 +113,36 @@ if __name__ == '__main__':
     parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
     args = parser.parse_args()
 
-    sosreport_path = str(Path(args.sosreport[0]).absolute())
+    path = str(Path(args.sosreport[0]).absolute())
 
-    #check if sosreport exists and is readable
-    sosreport_path_check(sosreport_path)
+    #check if path exists and is readable
+    sosreport_path_check(path)
 
-    #check if actually an sosreport
-    assert_is_sosreport(sosreport_path)
+    #check if path is actually an sosreport
+    assert_is_sosreport(path)
+
+    distro = get_ubuntu_code_name_from_sosreport(path)
+
+    #with the distro code-name in hand, make the chroot
+    #(provided it's a real distro)
+    chroot_path = dh.make_chroot_for_distro(distro)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     #code_name = get_ubuntu_code_name_from_sosreport(sosreport_path)
 
