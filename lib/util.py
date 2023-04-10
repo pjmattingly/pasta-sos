@@ -7,9 +7,12 @@ import tarfile
 from pathlib import Path
 import os
 import time
+import subprocess
 
 class Bad_Input(Exception): pass
 class Bad_Target(Exception): pass
+
+class Chmod_Error(Exception): pass
 
 def tar_gzip(source, output_dir, **kwargs):
     '''
@@ -58,3 +61,21 @@ def make_metadata_yaml(distro, output_dir):
     _out_file.write_text(_cleaned_content)
 
     return str(_out_file.resolve())
+
+def set_777(target):
+    '''
+    Given a path to a file, recursively `chmod` it to full read, write, and execute permissions
+    (this is used to address annoying permission issues with the output of debootstrap, etc.)
+    '''
+
+    _in = Path(target)
+    if not ( _in.exists() ): raise Bad_Input(f"Could not find: '{_in.resolve()}'.")
+
+    res = None
+    if _in.is_file():
+        res = subprocess.run(['sudo', 'chmod', '777', str(_in.resolve())], capture_output=True)
+
+    if _in.is_dir():
+        res = subprocess.run(['sudo', 'chmod', '-R', '777', str(_in.resolve())], capture_output=True)
+
+    if res.returncode != 0: raise Chmod_Error(f"Cannot change permissions on: {_in}; Giving up.")
