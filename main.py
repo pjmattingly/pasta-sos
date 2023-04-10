@@ -11,14 +11,7 @@ import lib.debootstrap_handler as dh
 import lib.util as util
 import lib.lxc_handler as lh
 
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-
 import re
-import sys
 
 #----
 #Exceptions
