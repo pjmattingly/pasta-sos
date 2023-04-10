@@ -54,4 +54,4 @@ def make_metadata_yaml(distro, output_dir):
     _out_file = _out / 'metadata.yaml'
     _out_file.write_text(_cleaned_content)
 
-    return(_out_file)
+    return str(_out_file.resolve())
