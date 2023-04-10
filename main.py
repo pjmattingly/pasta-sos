@@ -32,7 +32,7 @@ class Unknown_Error(Exception): pass
 #main
 #----
 
-def sosreport_path_check(path):
+def assert_path_ok(path):
     '''
     checking that sosreport files are usable
         see: https://docs.python.org/3/library/os.html#os.access
@@ -72,8 +72,8 @@ def assert_is_sosreport(path):
 
 if __name__ == '__main__':
     #assert_running_as_root()
-    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' such that the root user can run it.")
-    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' such that the root user can run it.")
+    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' so it is accessible by root.")
+    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' so it is accessible by root.")
     
     #parsing CLI arguments
     parser = argparse.ArgumentParser(description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     path = Path(args.sosreport[0]).absolute()
 
     #check if path exists and is readable
-    sosreport_path_check(path)
+    assert_path_ok(path)
 
     #check if path is actually an sosreport
     assert_is_sosreport(path)
