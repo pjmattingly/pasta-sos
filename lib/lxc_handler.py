@@ -22,7 +22,7 @@ def import_chroot(rootfs, metadata, vm_name):
     
     _name = f"{vm_name}_{shortuuid.ShortUUID().random(length=5)}"
 
-    res = subprocess.run(['sudo', 'lxc', 'import', str(metadata), str(rootfs), '--alias', str(_name)], capture_output=True)
+    res = subprocess.run(['sudo', 'lxc', 'image', 'import', str(metadata), str(rootfs), '--alias', str(_name)], capture_output=True)
 
     #if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
     print(res)
