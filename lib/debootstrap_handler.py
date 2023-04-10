@@ -14,7 +14,7 @@ import atexit
 class Bad_Distro(Exception): pass
 
 #keep track of the chroot created, as allowing the TemporaryDirectory object to fall out of scope, will trigger removing that directory
-_chroot = None 
+#_chroot = None
 
 def is_installed():
     '''
@@ -33,7 +33,7 @@ def _make_chroot(distro, _preserve=False):
     Create temporary a chroot environment of a distribution of Ubuntu
     '''
     
-    global _chroot
+    #global _chroot
     _chroot = _make_temp_dir(not _preserve)
     chroot_path = Path(_chroot.name) / str(distro) #name the chroot directory after the distro we want
 
@@ -57,6 +57,9 @@ def _make_chroot(distro, _preserve=False):
     return str(chroot_path)
 
 def _make_temp_dir(delete_on_program_exit=True):
+    '''
+    Make a temp directory that is removed on program exit.
+    '''
     _dir = tempfile.mkdtemp()
 
     if delete_on_program_exit:
