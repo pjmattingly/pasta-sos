@@ -11,21 +11,24 @@ import time
 class Bad_Input(Exception): pass
 class Bad_Target(Exception): pass
 
-def tar_gzip(source_dir, output_dir):
+def tar_gzip(source, output_dir, **kwargs):
     '''
     Given a directory, create a compressed archive of that directory named "rootfs.tar.gz" in output_dir
     see: https://stackoverflow.com/a/17081026
     '''
-    _in = Path(source_dir)
+    _in = Path(source)
     _out = Path(output_dir)
 
-    if not ( _in.exists() and _in.is_dir() ): raise Bad_Input(f"Could not compress '{_in.resolve()}' into a rootfs archive.")
+    if not ( _in.exists() ): raise Bad_Input(f"Could not compress '{_in.resolve()}'.")
     if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
 
-    _out = _out / "rootfs.tar.gz"
+    if "name" in kwargs:
+        _out = _out / f"{kwargs['name']}.tar.gz"
+    else:
+        _out = _out / f"{_in.name}.tar.gz"
 
     with tarfile.open(_out, "w:gz") as tar:
-        #add the contents of the target directory to the root of the tar file
+        #add the target to the root of the tar file
         #see: https://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python#comment72978579_17081026
         tar.add(_in, arcname='/')
 
