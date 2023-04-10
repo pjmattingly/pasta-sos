@@ -138,7 +138,11 @@ if __name__ == '__main__':
     _target = Path(chroot_path).parent
     archive_path = util.tar_gzip(chroot_path, _target)
 
+    #also make a an archive of a metadata.yaml file for lxc
+    metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
+
     print(archive_path)
+    print(metadata_archive_path)
 
 
 
