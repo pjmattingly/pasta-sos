@@ -35,7 +35,7 @@ def _make_chroot(distro, _preserve=False):
     
     #global _chroot
     _chroot = _make_temp_dir(not _preserve)
-    chroot_path = Path(_chroot.name) / str(distro) #name the chroot directory after the distro we want
+    chroot_path = Path(_chroot) / str(distro) #name the chroot directory after the distro we want
 
     '''
     ISSUE
@@ -45,7 +45,7 @@ def _make_chroot(distro, _preserve=False):
     in /tmp
     '''
     _prev = os.getcwd()
-    os.chdir(Path(_chroot.name))
+    os.chdir(Path(_chroot))
     
     res = subprocess.run(['sudo', 'debootstrap', '--no-check-gpg', str(distro), str(chroot_path)], capture_output=True)
 
