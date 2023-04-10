@@ -95,7 +95,7 @@ if __name__ == '__main__':
     chroot_path = dh.make_chroot_for_distro(distro)
 
     #set 777 on chroot to avoid re-occuring permission issues
-    util.set_777(chroot_path)
+    util.chmod_777(chroot_path)
 
     #then with the path to the chroot, make a compressed archive of it
     _target = Path(chroot_path).parent
