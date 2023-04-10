@@ -62,7 +62,7 @@ def make_metadata_yaml(distro, output_dir):
 
     return str(_out_file.resolve())
 
-def set_777(target):
+def chmod_777(target):
     '''
     Given a path to a file, recursively `chmod` it to full read, write, and execute permissions
     (this is used to address annoying permission issues with the output of debootstrap, etc.)
