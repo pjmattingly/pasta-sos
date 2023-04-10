@@ -26,7 +26,7 @@ class Not_Running_As_Root(Exception): pass
 class Debootstrap_Not_Installed(Exception): pass
 class LXC_Not_Installed(Exception): pass
 
-class Unknown_Error(Exception): pass
+#ls class Unknown_Error(Exception): pass
 
 #----
 #main
