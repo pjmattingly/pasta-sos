@@ -87,7 +87,8 @@ if __name__ == '__main__':
     parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
     args = parser.parse_args()
 
-    path = str(Path(args.sosreport[0]).absolute())
+    #path = str(Path(args.sosreport[0]).absolute())
+    path = Path(args.sosreport[0]).absolute()
 
     #check if path exists and is readable
     sosreport_path_check(path)
@@ -103,12 +104,17 @@ if __name__ == '__main__':
 
     #then with the path to the chroot, make a compressed archive of it
     _target = Path(chroot_path).parent
-    archive_path = util.tar_gzip(chroot_path, _target, name='rootfs')
+    rootfs_path = util.tar_gzip(chroot_path, _target, name='rootfs')
 
     #also make a an archive of a metadata.yaml file for lxc
     metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
 
-    print(archive_path)
+    #finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
+    #vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, )
+
+    #print(vm_name)
+
+    print(rootfs_path)
     print(metadata_archive_path)
 
 
