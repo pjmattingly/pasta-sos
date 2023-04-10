@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     #then with the path to the chroot, make a compressed archive of it
     _target = Path(chroot_path).parent
-    archive_path = util.tar_gzip(chroot_path, _target)
+    archive_path = util.tar_gzip(chroot_path, _target, name='rootfs')
 
     #also make a an archive of a metadata.yaml file for lxc
     metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
