@@ -1,3 +1,5 @@
+_DEBUG = True
+
 #----
 #Libs
 #----
@@ -25,8 +27,6 @@ class Not_Running_As_Root(Exception): pass
 
 class Debootstrap_Not_Installed(Exception): pass
 class LXC_Not_Installed(Exception): pass
-
-#ls class Unknown_Error(Exception): pass
 
 #----
 #main
@@ -92,7 +92,9 @@ if __name__ == '__main__':
 
     #with the distro code-name in hand, make the chroot
     #(provided it's a real distro)
-    chroot_path = dh.make_chroot_for_distro(distro)
+    chroot_path = dh.make_chroot_for_distro(distro, _DEBUG)
+
+    if _DEBUG: print(f"Path to tmp chroot dir: {chroot_path}")
 
     #set 777 on chroot to avoid re-occuring permission issues
     util.chmod_777(chroot_path)
