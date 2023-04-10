@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 import os
+import atexit
 
 class Bad_Distro(Exception): pass
 
@@ -27,13 +28,13 @@ def make_chroot_for_distro(distro):
     '''
     return _make_chroot(distro)
 
-def _make_chroot(distro):
+def _make_chroot(distro, _preserve=False):
     '''
     Create temporary a chroot environment of a distribution of Ubuntu
     '''
     
     global _chroot
-    _chroot = tempfile.TemporaryDirectory()
+    _chroot = _make_temp_dir(not _preserve)
     chroot_path = Path(_chroot.name) / str(distro) #name the chroot directory after the distro we want
 
     '''
@@ -54,3 +55,11 @@ def _make_chroot(distro):
     if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
 
     return str(chroot_path)
+
+def _make_temp_dir(delete_on_program_exit=True):
+    _dir = tempfile.mkdtemp()
+
+    if delete_on_program_exit:
+        atexit.register(lambda: shutil.rmtree(_dir, ignore_errors=True))
+
+    return _dir
