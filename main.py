@@ -78,7 +78,7 @@ def assert_is_sosreport(path):
     if res.returncode != 0: raise Not_Sosreport(f"This folder is not a sosreport: {path}")
 
 if __name__ == '__main__':
-    assert_running_as_root()
+    #assert_running_as_root()
     if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' such that the root user can run it.")
     if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' such that the root user can run it.")
     
@@ -87,7 +87,6 @@ if __name__ == '__main__':
     parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
     args = parser.parse_args()
 
-    #path = str(Path(args.sosreport[0]).absolute())
     path = Path(args.sosreport[0]).absolute()
 
     #check if path exists and is readable
@@ -102,6 +101,9 @@ if __name__ == '__main__':
     #(provided it's a real distro)
     chroot_path = dh.make_chroot_for_distro(distro)
 
+    #set 777 on chroot to avoid re-occuring permission issues
+    util.set_777(chroot_path)
+
     #then with the path to the chroot, make a compressed archive of it
     _target = Path(chroot_path).parent
     rootfs_path = util.tar_gzip(chroot_path, _target, name='rootfs')
@@ -110,51 +112,8 @@ if __name__ == '__main__':
     metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
 
     #finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
-    #vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, )
+    vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
 
-    #print(vm_name)
-
+    print(vm_name)
     print(rootfs_path)
     print(metadata_archive_path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #code_name = get_ubuntu_code_name_from_sosreport(sosreport_path)
-
-    #print(code_name)
-
-    #version_num = get_version_number_from_sosreport(sosreport_path)
-
-    #print( version_num )
-
-    #hotsos_out = run_hotsos(sosreport_path)
-
-    #friendly_version_name = get_version_name_from_hotsos(hotsos_out)
-
-    #first attempt to launch VM based on version information (friendly distro name; e.g., jammy) from hotsos
-    #res = run_multipass(friendly_version_name)
-
-    #check_done(res)
-
-    #the friendly distro name from hotsos could not be used to launch a VM (e.g., the distro name was not found amongst multipass's known images)
-    #second attempt to launch VM, this time pulling version number from the sosreport
-    
-    #res = run_multipass(version_num)
-
-    #check_done(res)
-
-    #if the VM could not be launched, then error out
-    #raise Unknown_Error(f"Could not launch VM based on sosreport at: '{sosreport_path}'.")
