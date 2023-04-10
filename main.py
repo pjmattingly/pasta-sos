@@ -77,39 +77,6 @@ def assert_is_sosreport(path):
 
     if res.returncode != 0: raise Not_Sosreport(f"This folder is not a sosreport: {path}")
 
-'''
-def get_version_number_from_sosreport(path):
-    sosreport = Path(path)
-
-    #given a path to a sosreport, extract the version number from <sosreport path>/lsb-release
-    p_lsb_release = sosreport / "lsb-release"
-
-    with open(p_lsb_release) as f:
-        version_string = f.read()
-
-    words = re.split(r"\s", version_string.strip())
-
-    #source: https://stackoverflow.com/questions/19859282/check-if-a-string-contains-a-number
-    version_num = [i for i in filter( lambda x: bool(re.search(r'\d', x)), words )][0]
-
-    #multipass only supports launching VMs using the major and minor version number
-    #so only return the first two numbers
-    #e.g., if lsb_release shows `22.04.1`, then use `22.04` to attempt to launch
-    #https://en.wikipedia.org/wiki/Software_versioning
-
-    #return ".".join(version_num.split(".")[:2])
-    return version_num
-'''
-
-'''
-def check_done(res):
-    if res.returncode == 0:
-        launched_message = re.search(r"Launched\: (.+)", res.stdout.decode()).group()
-        print( launched_message )
-
-        sys.exit(0)
-'''
-
 if __name__ == '__main__':
     assert_running_as_root()
     if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' such that the root user can run it.")
