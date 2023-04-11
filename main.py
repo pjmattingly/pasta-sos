@@ -27,6 +27,7 @@ class Not_Running_As_Root(Exception): pass
 
 class Debootstrap_Not_Installed(Exception): pass
 class LXC_Not_Installed(Exception): pass
+class Hotsos_Not_Installed(Exception): pass
 
 #----
 #main
@@ -56,14 +57,7 @@ def get_ubuntu_code_name_from_sosreport(path):
     #where we treat each line as its own string w.r.t matching (re.MULTILINE)
     return re.search(r'^Codename:\t(.+)$', content, re.MULTILINE).groups()[0]
 
-def assert_running_as_root():
-    '''
-    Check if running with root or root-like priviledges
-        see:
-        https://serverfault.com/questions/16767/check-admin-rights-inside-python-script
-        https://stackoverflow.com/questions/2806897/what-is-the-best-way-for-checking-if-the-user-of-a-script-has-root-like-privileg
-    '''
-    if not os.environ.get("SUDO_UID") and os.geteuid() != 0: raise Not_Running_As_Root("Please run with root priviledges.")
+def hotsos_is_installed(): return bool(shutil.which('hotsos'))
 
 def assert_is_sosreport(path):
     res = subprocess.run( ['hotsos', path], capture_output=True)
@@ -71,9 +65,9 @@ def assert_is_sosreport(path):
     if res.returncode != 0: raise Not_Sosreport(f"This folder is not a sosreport: {path}")
 
 if __name__ == '__main__':
-    #assert_running_as_root()
-    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' so it is accessible by root.")
-    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' so it is accessible by root.")
+    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap'.")
+    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc'.")
+    if not hotsos_is_installed(): raise Hotsos_Not_Installed("Please install 'hotsos'.")
     
     #parsing CLI arguments
     parser = argparse.ArgumentParser(description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
@@ -104,7 +98,19 @@ if __name__ == '__main__':
     rootfs_path = util.tar_gzip(chroot_path, _target, name='rootfs')
 
     #also make a an archive of a metadata.yaml file for lxc
-    metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
+    metadata_path = util.make_metadata_yaml(distro, _target)
+
+    '''
+    BUG
+    If the metadata.yaml file is compressed from another directory beyond its local directory
+    then the internal structure of tar file contains nesting folders
+    these folder relate to the relative path between the calling directory and the directory where the metadata.yaml file is
+    To resolve, change the working directory to where the metadata.yaml file is, then change back after the archive is made
+    '''
+    _prev = os.getcwd()
+    os.chdir(Path(_target))
+    metadata_archive_path = util.tar_gzip(Path(metadata_path).name, _target)
+    os.chdir(Path(_prev))
 
     #finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
     vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
