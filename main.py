@@ -116,9 +116,8 @@ if __name__ == '__main__':
     vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
 
     done_message = ''
-    done_message += f"Import complete, launch a container with: sudo lxc launch {vm_name}"
+    done_message += f"Import complete, launch a container with:\n"
+    done_message += f"sudo lxc launch {vm_name}"
     done_message += "\n"
 
-    #print(vm_name)
-    #print(rootfs_path)
-    #print(metadata_archive_path)
+    print(done_message)
