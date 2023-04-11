@@ -1,4 +1,4 @@
-_DEBUG = True
+_DEBUG = False
 
 #----
 #Libs
