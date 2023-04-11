@@ -25,8 +25,6 @@ class Sosreport_Not_Found(Exception): pass
 class Sosreport_Unreadable(Exception): pass
 class Not_Sosreport(Exception): pass
 
-class Not_Running_As_Root(Exception): pass
-
 class Debootstrap_Not_Installed(Exception): pass
 class LXC_Not_Installed(Exception): pass
 class Hotsos_Not_Installed(Exception): pass
