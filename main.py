@@ -6,14 +6,12 @@ import argparse
 from pathlib import Path
 import os
 import subprocess
-from yaml import load, dump
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
+
+import lib.debootstrap_handler as dh
+import lib.util as util
+import lib.lxc_handler as lh
 
 import re
-import sys
 
 #----
 #Exceptions
@@ -21,16 +19,24 @@ import sys
 
 class Sosreport_Not_Found(Exception): pass
 class Sosreport_Unreadable(Exception): pass
-class Sosreport_Error(Exception): pass
-class Unknown_Error(Exception): pass
+class Not_Sosreport(Exception): pass
+
+class Not_Running_As_Root(Exception): pass
+
+class Debootstrap_Not_Installed(Exception): pass
+class LXC_Not_Installed(Exception): pass
+
+#ls class Unknown_Error(Exception): pass
 
 #----
 #main
 #----
 
-def sosreport_path_check(path):
-    #checking that sosreport files are usable
-    #see: https://docs.python.org/3/library/os.html#os.access
+def assert_path_ok(path):
+    '''
+    checking that sosreport files are usable
+        see: https://docs.python.org/3/library/os.html#os.access
+    '''
 
     sosreport = Path(path)
 
@@ -38,103 +44,69 @@ def sosreport_path_check(path):
         raise Sosreport_Not_Found()
 
     if not os.access(sosreport, os.R_OK):
-        raise Sosreport_Unreadable("Cannot read sosreport due to permission restriction.")
+        raise Sosreport_Unreadable("Cannot read sosreport due to permission restrictions.")
 
-def run_hotsos(path):
-    sosreport = Path(path)
+def get_ubuntu_code_name_from_sosreport(path):
+    lsb_release_a_path = Path(path) / 'sos_commands'/ 'release' / 'lsb_release_-a'
 
-    #running hotsos against the passed in path
+    with open(lsb_release_a_path) as f:
+        content = f.read()
+
+    #match something like: ^`Codename:       (jammy)`$
+    #where we treat each line as its own string w.r.t matching (re.MULTILINE)
+    return re.search(r'^Codename:\t(.+)$', content, re.MULTILINE).groups()[0]
+
+def assert_running_as_root():
     '''
-    BUG
-
-    When doing subprocess.run with the correct invocation:
-
-    `subprocess.run(["hotsos", "--machine-readable", "--format yaml", str(sosreport)], shell=True, capture_output=True)`
-
-    hotsos will run as if the final argument is '/' and attempt to analyze the local machine.
-
-    Changing the argument to a single string suppresses this behaviour.
+    Check if running with root or root-like priviledges
+        see:
+        https://serverfault.com/questions/16767/check-admin-rights-inside-python-script
+        https://stackoverflow.com/questions/2806897/what-is-the-best-way-for-checking-if-the-user-of-a-script-has-root-like-privileg
     '''
+    if not os.environ.get("SUDO_UID") and os.geteuid() != 0: raise Not_Running_As_Root("Please run with root priviledges.")
 
-    res = subprocess.run([f"hotsos --machine-readable --format yaml {str(sosreport)}"], shell=True, capture_output=True)
+def assert_is_sosreport(path):
+    res = subprocess.run( ['hotsos', path], capture_output=True)
 
-    if res.returncode != 0:
-        raise Sosreport_Error(f"Path may not lead to a correct sosreport: {sosreport}", res.stderr.decode())
-
-    return res.stdout.decode()
-
-def get_version_name_from_hotsos(out):
-    #loading hotsos output
-    data = load(out, Loader=Loader)
-    words = re.split(r"\s", data['system']['os'].strip())
-    return [i for i in filter( lambda x: x != 'ubuntu', words )][0]
-
-def get_version_number_from_sosreport(path):
-    sosreport = Path(path)
-
-    #given a path to a sosreport, extract the version number from <sosreport path>/lsb-release
-    p_lsb_release = sosreport / "lsb-release"
-
-    with open(p_lsb_release) as f:
-        version_string = f.read()
-
-    words = re.split(r"\s", version_string.strip())
-
-    #source: https://stackoverflow.com/questions/19859282/check-if-a-string-contains-a-number
-    version_num = [i for i in filter( lambda x: bool(re.search(r'\d', x)), words )][0]
-
-    #multipass only supports launching VMs using the major and minor version number
-    #so only return the first two numbers
-    #e.g., if lsb_release shows `22.04.1`, then use `22.04` to attempt to launch
-    #https://en.wikipedia.org/wiki/Software_versioning
-
-    return ".".join(version_num.split(".")[:2])
-
-def run_multipass(version):
-    '''
-    BUG
-
-    When launching subprocess.run with the correct invocation:
-
-    `res = subprocess.run(["multipass", "launch", version], shell=True, capture_output=True)`
-
-    multipass returns an error about incorrect invocation. removing the `shell=True` option resolves this; Unlike the previous error.
-    '''
-
-    return subprocess.run(["multipass", "launch", version], capture_output=True)
-
-def check_done(res):
-    if res.returncode == 0:
-        launched_message = re.search(r"Launched\: (.+)", res.stdout.decode()).group()
-        print( launched_message )
-
-        sys.exit(0)
+    if res.returncode != 0: raise Not_Sosreport(f"This folder is not a sosreport: {path}")
 
 if __name__ == '__main__':
+    #assert_running_as_root()
+    if not dh.is_installed(): raise Debootstrap_Not_Installed("Please install 'debootstrap' so it is accessible by root.")
+    if not lh.is_installed(): raise LXC_Not_Installed("Please install 'lxc' so it is accessible by root.")
+    
     #parsing CLI arguments
     parser = argparse.ArgumentParser(description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
     parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
     args = parser.parse_args()
 
-    sosreport_path = str(Path(args.sosreport[0]).absolute())
+    path = Path(args.sosreport[0]).absolute()
 
-    sosreport_path_check(sosreport_path)
+    #check if path exists and is readable
+    assert_path_ok(path)
 
-    hotsos_out = run_hotsos(sosreport_path)
+    #check if path is actually an sosreport
+    assert_is_sosreport(path)
 
-    friendly_version_name = get_version_name_from_hotsos(hotsos_out)
+    distro = get_ubuntu_code_name_from_sosreport(path)
 
-    #first attempt to launch VM based on version information (friendly distro name; e.g., jammy) from hotsos
-    res = run_multipass(friendly_version_name)
+    #with the distro code-name in hand, make the chroot
+    #(provided it's a real distro)
+    chroot_path = dh.make_chroot_for_distro(distro)
 
-    check_done(res)
+    #set 777 on chroot to avoid re-occuring permission issues
+    util.chmod_777(chroot_path)
 
-    #the friendly distro name from hotsos could not be used to launch a VM (e.g., the distro name was not found amongst multipass's known images)
-    #second attempt to launch VM, this time pulling version number from the sosreport
-    version_num = get_version_number_from_sosreport(path)
-    res = run_multipass(version_num)
+    #then with the path to the chroot, make a compressed archive of it
+    _target = Path(chroot_path).parent
+    rootfs_path = util.tar_gzip(chroot_path, _target, name='rootfs')
 
-    check_done(res)
+    #also make a an archive of a metadata.yaml file for lxc
+    metadata_archive_path = util.tar_gzip(util.make_metadata_yaml(distro, _target), _target)
 
-    #if the VM could not be launched, then error out
-    raise Unknown_Error(f"Could not launch VM based on sosreport at: '{sosreport_path}'.")
+    #finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
+    vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
+
+    print(vm_name)
+    print(rootfs_path)
+    print(metadata_archive_path)
