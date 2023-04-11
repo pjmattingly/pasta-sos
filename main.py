@@ -15,6 +15,8 @@ import lib.lxc_handler as lh
 
 import re
 
+import shutil
+
 #----
 #Exceptions
 #----
@@ -101,11 +103,9 @@ if __name__ == '__main__':
     metadata_path = util.make_metadata_yaml(distro, _target)
 
     '''
-    BUG
-    If the metadata.yaml file is compressed from another directory beyond its local directory
-    then the internal structure of tar file contains nesting folders
-    these folder relate to the relative path between the calling directory and the directory where the metadata.yaml file is
-    To resolve, change the working directory to where the metadata.yaml file is, then change back after the archive is made
+    ISSUE
+    If an absolute path for metadata.yaml is passed to tar, then tar will reflect that path within the archive
+    to avoid this issue, change the working directory to where the metadata.yaml file is and then change back after the archive is made
     '''
     _prev = os.getcwd()
     os.chdir(Path(_target))
@@ -115,6 +115,10 @@ if __name__ == '__main__':
     #finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
     vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
 
-    print(vm_name)
-    print(rootfs_path)
-    print(metadata_archive_path)
+    done_message = ''
+    done_message += f"Import complete, launch a container with: sudo lxc launch {vm_name}"
+    done_message += "\n"
+
+    #print(vm_name)
+    #print(rootfs_path)
+    #print(metadata_archive_path)
