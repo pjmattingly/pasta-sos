@@ -22,11 +22,11 @@ def is_installed():
     '''
     return bool(shutil.which('debootstrap'))
 
-def make_chroot_for_distro(distro):
+def make_chroot_for_distro(distro, _preserve=False):
     '''
     Main entrypoint.
     '''
-    return _make_chroot(distro)
+    return _make_chroot(distro, _preserve)
 
 def _make_chroot(distro, _preserve=False):
     '''

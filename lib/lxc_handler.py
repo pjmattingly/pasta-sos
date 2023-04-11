@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import shortuuid
 
+class LXC_Error(Exception): pass
+
 def is_installed():
     '''
     Check if debootstrap is installed.
@@ -24,8 +26,6 @@ def import_chroot(rootfs, metadata, vm_name):
 
     res = subprocess.run(['sudo', 'lxc', 'image', 'import', str(metadata), str(rootfs), '--alias', str(_name)], capture_output=True)
 
-    #if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
-    print(res)
-
-    #return str(chroot_path)
+    if res.returncode != 0: raise LXC_Error(res.stderr.decode())
+    
     return _name

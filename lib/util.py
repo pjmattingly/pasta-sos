@@ -31,9 +31,13 @@ def tar_gzip(source, output_dir, **kwargs):
         _out = _out / f"{_in.name}.tar.gz"
 
     with tarfile.open(_out, "w:gz") as tar:
-        #add the target to the root of the tar file
-        #see: https://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python#comment72978579_17081026
-        tar.add(_in, arcname='/')
+        if _in.is_dir():
+            #if _in is a directory, then use this special form to recursively add the dir to the root of the tar file
+            #see: https://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python#comment72978579_17081026
+            tar.add(_in, arcname='/')
+        else: 
+            #otherwise, normal handling for a single file
+            tar.add(_in)
 
     return str(_out.resolve())
 
