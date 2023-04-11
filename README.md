@@ -2,28 +2,42 @@
 Create a virtual machine from an sosreport, for troubleshooting.
 
 ## Version
-v0.1.0
+v0.2.0
 
 ## Description
 A common task when troubleshooting client systems is to replicate a system for testing. This is done to issolate a bug or to attempt fixes without harming client infrastructure. A common tool to do this is `sosreport` (see: https://github.com/sosreport/sos). `sosreport` gathers detailed information about a client's system into a single package which then can be handed off to support for the purposes of information gathering or replication. Replication is often done manually, given the information in a sosreport. This project attempts to automate the process of replication.
 
 ## Overview
-This project, in its alpha state, is a thin wrapper around the tools `hotsos` and `multipass`. These tools are used (respectively) to gather summary information from a sosreport and to create a virtual machine configured similarly to the details found in a sosreport.
 
-This project is intended for the replication of Ubuntu installations. As such, at this time, when `pasta-sos` is ran it will create a virtual machine installed with Ubuntu whose version matches the information in the sosreport.
+At a high level the code proceeds through several steps:
+
+1) Read a `sosreport` and find the "friendly name" of the Ubuntu release the `sosreport` describes.
+2) Use that name with `debootstrap` to create a chroot environment of that Ubuntu release; see: https://wiki.debian.org/Debootstrap.
+3) With the Ubuntu environment bootstraped, it is then imported as an image into `lxc`; see: https://linuxcontainers.org/lxc/introduction/.
+
+Finally, any container created from the image should be a usable Ubuntu environment whose version matches the information found in the sosreport.
+
+Note, that this project also depends on `hotsos` for parsing validating sosreports; see: https://github.com/canonical/hotsos.
 
 Feedback on usage is appreciated, and recommendations on features and improvements are encouraged; see the discussion forum: https://github.com/pjmattingly/pasta-sos/discussions/categories/ideas.
 
-At the moment there is no packaging assocaited with this project, and so the installation instructions seek to mimic a development environment.
+At the moment there is no packaging associated with this project, and so the installation instructions seek to mimic a development environment.
 
 This tool is in an alpha state and will likely break. Please use the [Issues](https://github.com/pjmattingly/pasta-sos/issues) tab for reporting.
 
 ## Install
 
 0) Start installation on Ubuntu Jammy (22.04) (A freshly installed virtual machine is recommended)
-1) Install `hotsos`; `sudo snap install hotsos --classic`; See: https://github.com/canonical/hotsos#install
+1) Install `debootstrap`; `sudo apt install debootstrap`.
+2) Install `lxc`; `sudo apt install lxc`.
+3) Run lxc initialization; `sudo lxd init`.
+4) Install `hotsos`; `sudo snap install hotsos --classic`; See: https://github.com/canonical/hotsos#install
+5) Install `python` (with virtual environment support); `sudo apt install python3.10-venv`; see: https://www.python.org/downloads/
+
+
+
 2) Install `multipass`; `sudo snap install multipass`; See: https://github.com/canonical/multipass#install-multipass
-3) Install `python` (with virtual environment support); `sudo apt install python3.10-venv`; see: https://www.python.org/downloads/
+
 4) Install `pip`; `sudo apt install python3-pip`; see: https://pip.pypa.io/en/stable/installation/
 5) Install `pipx`; `python3 -m pip install --user pipx` and `python3 -m pipx ensurepath`; see: https://pypi.org/project/pipx/
 6) Reload the shell to make `pipx` visible (exec "$SHELL")
