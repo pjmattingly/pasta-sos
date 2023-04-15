@@ -8,7 +8,7 @@ import pasta_sos.debootstrap_handler as dh
 import pasta_sos.util as util
 import pasta_sos.lxc_handler as lh
 
-from pasta_sos.exceptions import *
+import pasta_sos.exceptions as exp
 from pathlib import Path
 
 def assert_path_ok(path):
@@ -20,10 +20,12 @@ def assert_path_ok(path):
     sosreport = Path(path)
 
     if not sosreport.exists():
-        raise SosreportNotFound()
+        raise exp.SosreportNotFound()
 
     if not os.access(sosreport, os.R_OK):
-        raise SosreportUnreadable("Cannot read sosreport due to permission restrictions.")
+        raise exp.SosreportUnreadable(
+            "Cannot read sosreport due to permission restrictions."
+            )
 
 
 def get_ubuntu_code_name_from_sosreport(path):
@@ -43,21 +45,23 @@ def assert_is_sosreport(path):
     res = subprocess.run(['hotsos', path], capture_output=True)
 
     if res.returncode != 0:
-        raise NotSosreport(f"This folder is not a sosreport: {path}")
+        raise exp.NotSosreport(f"This folder is not a sosreport: {path}")
 
 
 if __name__ == '__main__':
     if not dh.is_installed():
-        raise DebootstrapNotInstalled("Please install 'debootstrap'.")
+        raise exp.DebootstrapNotInstalled("Please install 'debootstrap'.")
     if not lh.is_installed():
-        raise LxcNotInstalled("Please install 'lxc'.")
+        raise exp.LxcNotInstalled("Please install 'lxc'.")
     if not hotsos_is_installed():
-        raise HotsosNotInstalled("Please install 'hotsos'.")
+        raise exp.HotsosNotInstalled("Please install 'hotsos'.")
 
     # parsing CLI arguments
     parser = argparse.ArgumentParser(
-        description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
-    parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
+        description='Given a sosreport from a system, create a pseudo-copy in a \
+            virtual machine.')
+    parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder \
+                        containing a sosreport.')
     parser.add_argument('--debug', action='store_true', help='add debug output')
     parser.add_argument('-v', '--verbose', action='store_true', help='add verbosity')
     args = parser.parse_args()
@@ -92,15 +96,18 @@ if __name__ == '__main__':
 
     '''
     ISSUE
-    If an absolute path for metadata.yaml is passed to tar, then tar will reflect that path within the archive
-    to avoid this issue, change the working directory to where the metadata.yaml file is and then change back after the archive is made
+    If an absolute path for metadata.yaml is passed to tar, then tar will reflect that 
+        path within the archive
+    to avoid this issue, change the working directory to where the metadata.yaml file is
+      and then change back after the archive is made
     '''
     _prev = os.getcwd()
     os.chdir(Path(_target))
     metadata_archive_path = util.tar_gzip(Path(metadata_path).name, _target)
     os.chdir(Path(_prev))
 
-    # finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
+    # finally, import the chroot into lxc via: 
+    # `lxc image import <metadata> <rootfs> --alias <name>`
     vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
 
     done_message = "\n".join(
