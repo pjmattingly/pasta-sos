@@ -4,13 +4,12 @@ import re
 import subprocess
 import shutil
 
-import lib.debootstrap_handler as dh
-import lib.util as util
-import lib.lxc_handler as lh
+import pasta_sos.debootstrap_handler as dh
+import pasta_sos.util as util
+import pasta_sos.lxc_handler as lh
 
-from lib.exceptions import *
+from pasta_sos.exceptions import *
 from pathlib import Path
-
 
 def assert_path_ok(path):
     """
@@ -59,8 +58,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
     parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
-    parser.add_argument('--debug', type=bool, action='store_true', help='add debug output')
-    parser.add_argument('-v', '--verbose', type=bool, action='store_true', help='add verbosity')
+    parser.add_argument('--debug', action='store_true', help='add debug output')
+    parser.add_argument('-v', '--verbose', action='store_true', help='add verbosity')
     args = parser.parse_args()
 
     path = Path(args.sosreport[0]).absolute()
@@ -75,9 +74,10 @@ if __name__ == '__main__':
 
     # with the distro code-name in hand, make the chroot
     # (provided it's a real distro)
-    chroot_path = dh.make_chroot_for_distro(distro, args['debug'])
+    #chroot_path = dh.make_chroot_for_distro(distro, args['debug'])
+    chroot_path = dh.make_chroot_for_distro(distro, args.debug)
 
-    if args['debug']:
+    if args.debug:
         print(f"Path to tmp chroot dir: {chroot_path}")
 
     # set 777 on chroot to avoid recurring permission issues
