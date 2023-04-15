@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pasta-sos"
-version = "0.1.0"
-description = ""
+version = "0.2.0"
+description = "Create a virtual machine from a sosreport, for troubleshooting. https://github.com/pjmattingly/pasta-sos"
 authors = ["Peter Mattingly <peter.mattingly@canonical.com>"]
 readme = "README.md"
 packages = [{include = "pasta_sos"}]
