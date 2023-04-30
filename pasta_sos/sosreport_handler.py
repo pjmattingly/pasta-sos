@@ -1,16 +1,11 @@
 import tarfile
 from pathlib import Path
-import util
 import os
 import io
 
 class DoesNotExist(Exception):
     pass
-class NotFile(Exception):
-    pass
-class NotTar(Exception):
-    pass
-class TargetNotFound(Exception):
+class NotSosReport(Exception):
     pass
 class CannotRead(Exception):
     pass
@@ -26,29 +21,23 @@ class SOS:
 
     def __init__(self, report):
         self._report = Path(report)
-        self._is_archive = False
+        #self._is_archive = False
 
         if not ( self._report.exists() ):
             raise DoesNotExist(f"Could not find sosreport: {self._report}")
         
-        if self._report.is_file():
-            self._is_archive = True
-
-        if self._is_archive:
-            if not (tarfile.is_tarfile(self._report)):
-                raise NotTar(
-                    f"Sosporet should be a tar.xz archive or a directory; instead: \
+        if not (self._is_sosreport(self._report)):
+            raise NotSosReport(
+                    f"Sos report should be a tar.xz archive or a directory; instead: \
                     {self._report}"
                     )
-            
-            #try to mount the archive
-            #_mnt = util.make_temp_dir()
-
-
-            #raise NotFile(f"This is not a file: {self._report}")
-
+        
     def _is_sosreport(self, report):
-        pass
+        _report = Path(report)
+        if _report.is_file():
+            return self._is_archive_sosreport(report)
+        else:
+            return self._is_dir_sosreport(report)
 
     def _is_dir_sosreport(self, report):
         _report = Path(report)
@@ -82,6 +71,8 @@ class SOS:
             return False
         
         """
+        Check for 'version.txt' in the archive
+
         a standard pattern for sos report archives seems to be that the root of the
         report is nested inside a containing folder
         where the folder name is the name of the archive without extensions
@@ -92,7 +83,7 @@ class SOS:
             sosreport-veteran-margay-test-42-2023-02-26-yevmkut
 
             which acts as the root of the report
-        so all calls to getmember() should use this "root name" as a prefix when
+        so all calls to TarFile.getmember() should use this "root name" as a prefix when
         locating files to extract
         """
         _root_name = _report.with_suffix('').stem
@@ -101,11 +92,6 @@ class SOS:
 
         try:
             with tarfile.open(_path) as tar: 
-                #print( tar.getmember(_target).tobuf() )
-                #print( tar.extractfile(tar.getmember(_target)) )
-                #print( tar.extractfile(_target) )
-                #print( io.TextIOWrapper(tar.extractfile(_target)) )
-                print(  )
                 """
                 get the content of the _target file
                 TarFile.extractfile() returns a io.BufferedReader()
@@ -117,16 +103,16 @@ class SOS:
                     https://docs.python.org/3/library/io.html#io.BufferedReader
                     https://stackoverflow.com/q/51468724
                 """
-
                 _content = io.TextIOWrapper(tar.extractfile(_target)).readline()
+
+                if "sosreport" not in _content:
+                    return False
+                
         except KeyError:
+            #if not found in the archive
             return False
         
-        
-        
-
-        
-        
+        return True
 
 '''
 def extractfile(file, output_dir):
@@ -196,3 +182,8 @@ except KeyError:
 _test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar' )
 print( _test_sos._is_archive_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
 
+_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz' )
+print( _test_sos._is_archive_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz') )
+
+_test_sos = SOS( '../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut' )
+print( _test_sos._is_archive_sosreport('../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut') )
