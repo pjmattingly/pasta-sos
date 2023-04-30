@@ -1,7 +1,8 @@
 import tarfile
 from pathlib import Path
 import util
-#import os
+import os
+import io
 
 class DoesNotExist(Exception):
     pass
@@ -10,6 +11,8 @@ class NotFile(Exception):
 class NotTar(Exception):
     pass
 class TargetNotFound(Exception):
+    pass
+class CannotRead(Exception):
     pass
 
 class SOS:
@@ -31,7 +34,7 @@ class SOS:
         if self._report.is_file():
             self._is_archive = True
 
-        if self._is_archive():
+        if self._is_archive:
             if not (tarfile.is_tarfile(self._report)):
                 raise NotTar(
                     f"Sosporet should be a tar.xz archive or a directory; instead: \
@@ -47,8 +50,83 @@ class SOS:
     def _is_sosreport(self, report):
         pass
 
-    def _is_archive(self):
-        return self._is_archive
+    def _is_dir_sosreport(self, report):
+        _report = Path(report)
+
+        if not os.access(_report, os.R_OK):
+            raise CannotRead(f"Cannot read report: {_report}")
+
+        if not (_report.exists() and _report.is_dir()):
+            return False
+        
+        _version = _report / "version.txt"
+
+        if not (_version.exists()):
+            return False
+        
+        if "sosreport" not in _version.read_text():
+            return False
+        
+        return True
+
+    def _is_archive_sosreport(self, report):
+        _report = Path(report)
+
+        if not os.access(_report, os.R_OK):
+            raise CannotRead(f"Cannot read report: {_report}")
+
+        if not (_report.exists() and _report.is_file()):
+            return False
+        
+        if not tarfile.is_tarfile(_report):
+            return False
+        
+        """
+        a standard pattern for sos report archives seems to be that the root of the
+        report is nested inside a containing folder
+        where the folder name is the name of the archive without extensions
+            for example:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
+
+            contains a folder named:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut
+
+            which acts as the root of the report
+        so all calls to getmember() should use this "root name" as a prefix when
+        locating files to extract
+        """
+        _root_name = _report.with_suffix('').stem
+        _file_name = "version.txt"
+        _target = _root_name + "/" + _file_name
+
+        try:
+            with tarfile.open(_path) as tar: 
+                #print( tar.getmember(_target).tobuf() )
+                #print( tar.extractfile(tar.getmember(_target)) )
+                #print( tar.extractfile(_target) )
+                #print( io.TextIOWrapper(tar.extractfile(_target)) )
+                print(  )
+                """
+                get the content of the _target file
+                TarFile.extractfile() returns a io.BufferedReader()
+                for ease of use, it can be wrapped in a io.TextIOWrapper()
+                and treated like a regular file handle similar to that returned from
+                open()
+                    see:
+                    https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
+                    https://docs.python.org/3/library/io.html#io.BufferedReader
+                    https://stackoverflow.com/q/51468724
+                """
+
+                _content = io.TextIOWrapper(tar.extractfile(_target)).readline()
+        except KeyError:
+            return False
+        
+        
+        
+
+        
+        
 
 '''
 def extractfile(file, output_dir):
@@ -104,6 +182,17 @@ try:
     with tarfile.open(_path) as tar: 
         #print(tar.getmembers())
         #print( tar.getmember("sosreport-peter-virtual-machine-2023-04-16-nqsngbd") )
-        print( tar.getmember(_target) )
+        #print( tar.getmember(_target) )
+        pass
 except KeyError:
     raise TargetNotFound(f"Could not locate in sosreport: {_target}")
+
+#_test_sos = SOS( '../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut' )
+#print( _test_sos._is_dir_sosreport('../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut') )
+
+#_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar' )
+#print( _test_sos._is_dir_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
+
+_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar' )
+print( _test_sos._is_archive_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
+
