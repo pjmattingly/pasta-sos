@@ -8,6 +8,9 @@ from pathlib import Path
 import os
 import time
 import subprocess
+import tempfile
+import atexit
+import shutil
 
 class Bad_Input(Exception): pass
 class Bad_Target(Exception): pass
@@ -16,14 +19,16 @@ class Chmod_Error(Exception): pass
 
 def tar_gzip(source, output_dir, **kwargs):
     '''
-    Given a directory, create a compressed archive of that directory named "rootfs.tar.gz" in output_dir
+    Given a file or directory, create a compressed archive (tar.gz) of it in output_dir
     see: https://stackoverflow.com/a/17081026
     '''
     _in = Path(source)
     _out = Path(output_dir)
 
-    if not ( _in.exists() ): raise Bad_Input(f"Could not compress '{_in.resolve()}'.")
-    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
+    if not ( _in.exists() ):
+        raise Bad_Input(f"Could not compress '{_in.resolve()}'.")
+    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ):
+        raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
 
     if "name" in kwargs:
         _out = _out / f"{kwargs['name']}.tar.gz"
@@ -32,8 +37,9 @@ def tar_gzip(source, output_dir, **kwargs):
 
     with tarfile.open(_out, "w:gz") as tar:
         if _in.is_dir():
-            #if _in is a directory, then use this special form to recursively add the dir to the root of the tar file
-            #see: https://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python#comment72978579_17081026
+            # if _in is a directory, then use this special form to recursively add the 
+            # dir to the root of the tar file
+            # see: https://stackoverflow.com/questions/2032403/how-to-create-full-compressed-tar-file-using-python#comment72978579_17081026
             tar.add(_in, arcname='/')
         else: 
             #otherwise, normal handling for a single file
@@ -83,3 +89,14 @@ def chmod_777(target):
         res = subprocess.run(['sudo', 'chmod', '-R', '777', str(_in.resolve())], capture_output=True)
 
     if res.returncode != 0: raise Chmod_Error(f"Cannot change permissions on: {_in}; Giving up.")
+
+def make_temp_dir(delete_on_program_exit=True):
+    '''
+    Make a temp directory that is (usually) removed on program exit.
+    '''
+    _dir = tempfile.mkdtemp()
+
+    if delete_on_program_exit:
+        atexit.register(lambda: shutil.rmtree(_dir, ignore_errors=True))
+
+    return _dir
