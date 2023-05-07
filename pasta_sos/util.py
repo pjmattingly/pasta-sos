@@ -11,11 +11,16 @@ import subprocess
 import tempfile
 import atexit
 import shutil
+import magic
 
-class Bad_Input(Exception): pass
-class Bad_Target(Exception): pass
-
-class Chmod_Error(Exception): pass
+class Bad_Input(Exception):
+    pass
+class Bad_Target(Exception):
+    pass
+class Chmod_Error(Exception):
+    pass
+class FileNotFound(Exception):
+    pass
 
 def tar_gzip(source, output_dir, **kwargs):
     '''
@@ -100,3 +105,34 @@ def make_temp_dir(delete_on_program_exit=True):
         atexit.register(lambda: shutil.rmtree(_dir, ignore_errors=True))
 
     return _dir
+
+def is_text(file):
+    return _is_text(file)
+
+def _is_text(file):
+    """
+    Detect if a file is text or not
+        Query the unix command `file` via the python binding from:
+        https://pypi.org/project/python-magic/
+
+        see also:
+        https://github.com/binaryornot/binaryornot
+        https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
+    """
+    if not _file_exists_and_is_readable(file):
+        raise FileNotFound(f"Could not find or access this file: {file}")
+
+    res = magic.from_file(file, mime=True)
+
+    return ('text' == res.split("/")[0])
+
+def is_binary(file):
+    return not _is_text(file)
+
+def file_exists_and_is_readable(file):
+    return _file_exists_and_is_readable(file)
+
+def _file_exists_and_is_readable(file):
+    _file = Path(file)
+
+    return (_file.exists() and os.access(_file, os.R_OK))
