@@ -10,9 +10,9 @@ class NotSosReport(Exception):
 class CannotRead(Exception):
     pass
 
-class SOS:
+class SosReport:
     """
-    A class symbolizing an sosreport
+    A class symbolizing a sosreport
     a sosreport can be a folder or a compressed archive
     normal workflows include:
         checking that the sosreport is valid by checking for a "version.txt" file
@@ -75,7 +75,7 @@ class SOS:
 
         a standard pattern for sos report archives seems to be that the root of the
         report is nested inside a containing folder
-        where the folder name is the name of the archive without extensions
+        where the folder name is the name of the archive without an extension
             for example:
             sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
 
@@ -114,35 +114,74 @@ class SOS:
         
         return True
 
-'''
-def extractfile(file, output_dir):
-    _out = Path(output_dir)
+    def contains_file(self, target):
+        """
+        Check if a file is present in the sosreport
+        """
+        
+        if self._report.is_file():
+            return self._archive_contains_file(target)
+        else:
+            return self._dir_contains_file(target)
 
-    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ):
-        raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
+    def _dir_contains_file(self, target):
+        _report = Path(self._report)
 
-_path = '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
+        _target = _report / str(target)
 
-import tarfile
-#tar = tarfile.open(_path)
-'''
+        if not (_target.exists()):
+            return False
+        
+        return True
 
-_test_sos = SOS( '../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut' )
-#print( _test_sos._is_dir_sosreport('../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut') )
-print(_test_sos)
+    def _archive_contains_file(self, target):
+        _report = Path(self._report)
 
-_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar' )
-#print( _test_sos._is_dir_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
-print(_test_sos)
+        """
+        Check for 'version.txt' in the archive
 
-_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar' )
-#print( _test_sos._is_archive_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
-print(_test_sos)
+        a standard pattern for sos report archives seems to be that the root of the
+        report is nested inside a containing folder
+        where the folder name is the name of the archive without an extension
+            for example:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
 
-_test_sos = SOS( '../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz' )
-#print( _test_sos._is_archive_sosreport('../../sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz') )
-print(_test_sos)
+            contains a folder named:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut
 
-_test_sos = SOS( '../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut' )
-#print( _test_sos._is_archive_sosreport('../../sosreport-veteran-margay-test-42-2023-02-26-yevmkut') )
-print(_test_sos)
+            which acts as the root of the report
+        so all calls to TarFile.getmember() should use this "root name" as a prefix when
+        locating files to extract
+        """
+        _root_name = _report.with_suffix('').stem
+        _file_name = str(target)
+        _target = _root_name + "/" + _file_name
+
+        try:
+            with tarfile.open(_report) as tar: 
+                """
+                get the content of the _target file
+                TarFile.extractfile() returns a io.BufferedReader()
+                for ease of use, it can be wrapped in a io.TextIOWrapper()
+                and treated like a regular file handle similar to that returned from
+                open()
+                    see:
+                    https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
+                    https://docs.python.org/3/library/io.html#io.BufferedReader
+                    https://stackoverflow.com/q/51468724
+                """
+                tar.getmember(_target)
+                return True
+        except KeyError:
+            #if not found in the archive
+            return False
+
+_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
+#_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
+#_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
+_SOS = SosReport(_report)
+print( _SOS.contains_file("environment") )
+print( _SOS.contains_file("environment.txt") )
+print( _SOS.contains_file("version.txt") )
+print( _SOS.contains_file("sos_reports/sos.txt") )
+print( _SOS.contains_file("sos_reports/sos") )
