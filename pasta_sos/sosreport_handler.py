@@ -206,6 +206,10 @@ class SosReport:
         return _target.read_bytes()
 
     def _archive_get_file(self, target):
+        """
+        Return the content of a file within an sosreport report archive as either
+        a string or as a bytes-object; depending on file-type.
+        """
         _report = Path(self._report)
 
         """
@@ -249,12 +253,18 @@ class SosReport:
             """
             BUG
             When completing this read with the form:
+            
             ```
             tar = tarfile.open(_report)
             _content = tar.extractfile(_target)
-            _content.read()
+            _data = _content.read()
+            _content.close()
+            tar.close()
+            return _data
             ```
 
+            The content of the opened file is truncated. This issue is resolved
+            when using the `with` pragma instead.
             """
             _content = tar.extractfile(_target).read()
 
@@ -264,26 +274,6 @@ class SosReport:
             except UnicodeDecodeError:
                 #otherwise content is bytes, so just return it raw
                 return _content
-        
-        #open without the standard `with` handle here so we can pass an open stream
-        #to util for identification
-        """
-        tar = tarfile.open(_report)
-        _content = 
-
-        if util.is_text(_content):
-            #_data = io.TextIOWrapper(_content).readlines()
-            _data = _content.read()
-        else:
-            _data = io.BufferedReader(_content).read()
-            #_data = _content.read()
-        
-        #close both the tarfile and the tarfile.ExFileObject manually
-        tar.close()
-        _content.close()
-
-        return _data
-        """
 
 #_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
