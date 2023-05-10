@@ -12,8 +12,9 @@ import tempfile
 import atexit
 import shutil
 import magic
+import io
 
-class Bad_Input(Exception):
+class BadInput(Exception):
     pass
 class Bad_Target(Exception):
     pass
@@ -109,7 +110,7 @@ def make_temp_dir(delete_on_program_exit=True):
 def is_text(file):
     return _is_text(file)
 
-def _is_text(file):
+def _is_text(file_or_stream):
     """
     Detect if a file is text or not
         Query the unix command `file` via the python binding from:
@@ -119,10 +120,30 @@ def _is_text(file):
         https://github.com/binaryornot/binaryornot
         https://stackoverflow.com/questions/898669/how-can-i-detect-if-a-file-is-binary-non-text-in-python
     """
-    if not _file_exists_and_is_readable(file):
-        raise FileNotFound(f"Could not find or access this file: {file}")
 
-    res = magic.from_file(file, mime=True)
+    #check if stream
+    if isinstance(file_or_stream, io.IOBase):
+        #print(io.BufferedReader(file_or_stream))
+        #print(io.BufferedReader(file_or_stream).read(2048))
+        #res = magic.from_buffer(io.BufferedReader(file_or_stream).read(2048))
+        res = magic.from_buffer(file_or_stream.read(2048), mime=True)
+        #res = magic.from_buffer(file_or_stream)
+        print("is stream!")
+        #print(io.TextIOWrapper(file_or_stream))
+        #print(res)
+        #return False
+    else:
+        #not stream, so check if file
+        try:
+            _file = Path(file_or_stream)
+        except TypeError:
+            raise BadInput(f"Expecting file or stream, instead saw: {file_or_stream}")
+
+        if not _file_exists_and_is_readable(_file):
+            raise FileNotFound(f"Could not find or access this file: {_file}")
+
+        #use the File syscall to deduce file-type and return the mime-type detected
+        res = magic.from_file(_file, mime=True)
 
     return ('text' == res.split("/")[0])
 
