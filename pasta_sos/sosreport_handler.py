@@ -225,29 +225,13 @@ class SosReport:
         _root_name = _report.with_suffix('').stem
         _file_name = str(target)
         _target = _root_name + "/" + _file_name
-
-        """
-        try:
-            with tarfile.open(_report) as tar: 
-                #TarFile.extractfile() returns a io.BufferedReader()
-                #and so we should use a buffered reader to read its contents
-                #which type of reader, depends on the file type
-                #    see:
-                #    https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
-                #    https://docs.python.org/3/library/io.html#io.BufferedReader
-                #    https://stackoverflow.com/q/51468724
-                _content = tar.extractfile(_target)
-        finally:
-            print(_content)
-            print(util.is_text(_content))
-        """
         
         """
         BUG?
 
         The documentation from TarFile.extractfile claims that "If member is a regular 
         file or a link, an io.BufferedReader object"
-        This is not the case, as during testing a `ExFileObject` is returned instead
+        This is not the case, as during testing an `ExFileObject` is returned instead
         It's not clear what this file type is, as it's not listed in the documentation
         for 3.10.
         However, this thread implies that the object may be associated with the
@@ -255,27 +239,59 @@ class SosReport:
         to 3.5 (as far back as the docs go)?
             see:
             https://github.com/pandas-dev/pandas/issues/16530
-        There are other documentation for "stdlib" Python that show this class,
+        There are other documentations for "stdlib" Python that show this class,
         but nothing in the main documentation.
             see:
             https://epydoc.sourceforge.net/stdlib/tarfile.ExFileObject-class.html
             https://tedboy.github.io/python_stdlib/generated/generated/tarfile.ExFileObject.html#tarfile.ExFileObject
         """
+        with tarfile.open(_report) as tar:
+            """
+            BUG
+            When completing this read with the form:
+            ```
+            tar = tarfile.open(_report)
+            _content = tar.extractfile(_target)
+            _content.read()
+            ```
+
+            """
+            _content = tar.extractfile(_target).read()
+
+            try:
+                #checking if _content is text, if so then return its decode() value
+                return _content.decode()
+            except UnicodeDecodeError:
+                #otherwise content is bytes, so just return it raw
+                return _content
+        
         #open without the standard `with` handle here so we can pass an open stream
         #to util for identification
+        """
         tar = tarfile.open(_report)
-        _content = tar.extractfile(_target)
+        _content = 
+
+        if util.is_text(_content):
+            #_data = io.TextIOWrapper(_content).readlines()
+            _data = _content.read()
+        else:
+            _data = io.BufferedReader(_content).read()
+            #_data = _content.read()
         
         #close both the tarfile and the tarfile.ExFileObject manually
         tar.close()
         _content.close()
 
-        return util.is_text(_content)
+        return _data
+        """
 
 #_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
 _report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
 _SOS = SosReport(_report)
 
-_SOS._archive_get_file('usr/share/zoneinfo/America/Edmonton')
-#_SOS._archive_get_file('version.txt')
+res = _SOS._archive_get_file('usr/share/zoneinfo/America/Edmonton')
+#res = _SOS._archive_get_file('version.txt')
+#res = _SOS._archive_get_file('sos_logs/sos.log')
+
+print(res)
