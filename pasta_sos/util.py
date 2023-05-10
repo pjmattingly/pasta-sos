@@ -123,15 +123,9 @@ def _is_text(file_or_stream):
 
     #check if stream
     if isinstance(file_or_stream, io.IOBase):
-        #print(io.BufferedReader(file_or_stream))
-        #print(io.BufferedReader(file_or_stream).read(2048))
-        #res = magic.from_buffer(io.BufferedReader(file_or_stream).read(2048))
+        #read 2048 bytes from stream as per recommendation from python-magic
+        #   see: https://pypi.org/project/python-magic/
         res = magic.from_buffer(file_or_stream.read(2048), mime=True)
-        #res = magic.from_buffer(file_or_stream)
-        print("is stream!")
-        #print(io.TextIOWrapper(file_or_stream))
-        #print(res)
-        #return False
     else:
         #not stream, so check if file
         try:
