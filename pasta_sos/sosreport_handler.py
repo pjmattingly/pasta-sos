@@ -2,12 +2,15 @@ import tarfile
 from pathlib import Path
 import os
 import io
+import util
 
 class DoesNotExist(Exception):
     pass
 class NotSosReport(Exception):
     pass
 class CannotRead(Exception):
+    pass
+class FileNotFoundInReport(Exception):
     pass
 
 class SosReport:
@@ -115,6 +118,9 @@ class SosReport:
         return True
 
     def contains_file(self, target):
+        return self._contains_file(target)
+    
+    def _contains_file(self, target):
         """
         Check if a file is present in the sosreport
         """
@@ -176,6 +182,33 @@ class SosReport:
             #if not found in the archive
             return False
 
+    def get_file(self, target):
+        """
+        Fetch the content of a file within the sosreport
+        """
+
+        if not self._contains_file(target):
+            raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
+                                       {target}")
+        
+        if self._report.is_file():
+            return self._archive_get_file(target)
+        else:
+            return self._dir_get_file(target)
+    
+    def _dir_get_file(self, target):
+        _report = Path(self._report)
+
+        _target = _report / str(target)
+
+        if util.is_text(_target):
+            return _target.read_text()
+        return _target.read_bytes()
+
+    def _archive_get_file(self, target):
+        pass
+    
+"""
 _report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
@@ -185,3 +218,4 @@ print( _SOS.contains_file("environment.txt") )
 print( _SOS.contains_file("version.txt") )
 print( _SOS.contains_file("sos_reports/sos.txt") )
 print( _SOS.contains_file("sos_reports/sos") )
+"""
