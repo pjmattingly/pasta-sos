@@ -206,16 +206,76 @@ class SosReport:
         return _target.read_bytes()
 
     def _archive_get_file(self, target):
-        pass
-    
-"""
-_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
+        _report = Path(self._report)
+
+        """
+        a standard pattern for sos report archives seems to be that the root of the
+        report is nested inside a containing folder
+        where the folder name is the name of the archive without an extension
+            for example:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
+
+            contains a folder named:
+            sosreport-veteran-margay-test-42-2023-02-26-yevmkut
+
+            which acts as the root of the report
+        so all calls to TarFile.getmember() should use this "root name" as a prefix when
+        locating files to extract
+        """
+        _root_name = _report.with_suffix('').stem
+        _file_name = str(target)
+        _target = _root_name + "/" + _file_name
+
+        """
+        try:
+            with tarfile.open(_report) as tar: 
+                #TarFile.extractfile() returns a io.BufferedReader()
+                #and so we should use a buffered reader to read its contents
+                #which type of reader, depends on the file type
+                #    see:
+                #    https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
+                #    https://docs.python.org/3/library/io.html#io.BufferedReader
+                #    https://stackoverflow.com/q/51468724
+                _content = tar.extractfile(_target)
+        finally:
+            print(_content)
+            print(util.is_text(_content))
+        """
+        
+        """
+        BUG?
+
+        The documentation from TarFile.extractfile claims that "If member is a regular 
+        file or a link, an io.BufferedReader object"
+        This is not the case, as during testing a `ExFileObject` is returned instead
+        It's not clear what this file type is, as it's not listed in the documentation
+        for 3.10.
+        However, this thread implies that the object may be associated with the
+        TarFile class in Python 3; Implying that it was a part of the class prior
+        to 3.5 (as far back as the docs go)?
+            see:
+            https://github.com/pandas-dev/pandas/issues/16530
+        There are other documentation for "stdlib" Python that show this class,
+        but nothing in the main documentation.
+            see:
+            https://epydoc.sourceforge.net/stdlib/tarfile.ExFileObject-class.html
+            https://tedboy.github.io/python_stdlib/generated/generated/tarfile.ExFileObject.html#tarfile.ExFileObject
+        """
+        #open without the standard `with` handle here so we can pass an open stream
+        #to util for identification
+        tar = tarfile.open(_report)
+        _content = tar.extractfile(_target)
+        
+        #close both the tarfile and the tarfile.ExFileObject manually
+        tar.close()
+        _content.close()
+
+        return util.is_text(_content)
+
+#_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
-#_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
+_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
 _SOS = SosReport(_report)
-print( _SOS.contains_file("environment") )
-print( _SOS.contains_file("environment.txt") )
-print( _SOS.contains_file("version.txt") )
-print( _SOS.contains_file("sos_reports/sos.txt") )
-print( _SOS.contains_file("sos_reports/sos") )
-"""
+
+_SOS._archive_get_file('usr/share/zoneinfo/America/Edmonton')
+#_SOS._archive_get_file('version.txt')
