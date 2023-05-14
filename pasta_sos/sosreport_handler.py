@@ -181,22 +181,3 @@ class SosReport:
         except KeyError:
             raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
                                        {target}")
-        
-
-#_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
-#_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
-#_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
-_report = 'test'
-_SOS = SosReport(_report)
-
-#res = _SOS._get_file(_report, 'usr/share/zoneinfo/America/Edmonton')
-#res = _SOS._get_file(_report, 'version.txt')
-#res = _SOS._get_file(_report, 'sos_logs/sos.log')
-#print(res)
-
-#print( _SOS._is_sosreport("test") )
-#print( _SOS._is_sosreport('/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
-
-#_report = Path("test")
-#print(_report.is_file())
-#print(tarfile.is_tarfile(_report))
