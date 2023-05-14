@@ -24,7 +24,6 @@ class SosReport:
 
     def __init__(self, report):
         self._report = Path(report)
-        #self._is_archive = False
         
         if not ( self._is_sosreport(self._report) ):
             _r = self._report
@@ -120,37 +119,50 @@ class SosReport:
             return False
 
     def get_file(self, target):
-        return self._get_file(self, target)
+        return self._get_file(self, self._report, target)
 
-    def _get_file(self, target):
+    def _get_file(self, report, target):
         """
         Fetch the content of a file within the sosreport
+        (Assumes that `report` is a path to a readable sosreport file)
         """
+        _report = Path(report)
 
+        """
         if not self._contains_file(target):
             raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
                                        {target}")
+        """
         
-        if self._report.is_file():
+        if _report.is_file():
             return self._archive_get_file(target)
         else:
             return self._dir_get_file(target)
     
-    def _dir_get_file(self, target):
-        _report = Path(self._report)
+    def _dir_get_file(self, report, target):
+        """
+        Return the contents of target in a diretory-style sosreport
+        (Assumes that `report` is a path to a readable sosreport)
+        """
+
+        _report = Path(report)
 
         _target = _report / str(target)
+
+        if not _report.exists():
+            raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
+                                       {target}")
 
         if util.is_text(_target):
             return _target.read_text()
         return _target.read_bytes()
 
-    def _archive_get_file(self, target):
+    def _archive_get_file(self, report, target):
         """
-        Return the content of a file within an sosreport report archive as either
-        a string or as a bytes-object; depending on file-type.
+        Return the contents of target in an archive-style sosreport
+        (Assumes that `report` is a path to a readable sosreport)
         """
-        _report = Path(self._report)
+        _report = Path(report)
 
         """
         a standard pattern for sos report archives seems to be that the root of the
@@ -189,31 +201,36 @@ class SosReport:
             https://epydoc.sourceforge.net/stdlib/tarfile.ExFileObject-class.html
             https://tedboy.github.io/python_stdlib/generated/generated/tarfile.ExFileObject.html#tarfile.ExFileObject
         """
-        with tarfile.open(_report) as tar:
-            """
-            BUG
-            When completing this read with the form:
-            
-            ```
-            tar = tarfile.open(_report)
-            _content = tar.extractfile(_target)
-            _data = _content.read()
-            _content.close()
-            tar.close()
-            return _data
-            ```
+        try:
+            with tarfile.open(_report) as tar:
+                """
+                BUG
+                When completing this read with the form:
+                
+                ```
+                tar = tarfile.open(_report)
+                _content = tar.extractfile(_target)
+                _data = _content.read()
+                _content.close()
+                tar.close()
+                return _data
+                ```
 
-            The content of the opened file is truncated. This issue is resolved
-            when using the `with` pragma instead.
-            """
-            _content = tar.extractfile(_target).read()
+                The content of the opened file is truncated. This issue is resolved
+                when using the `with` pragma instead.
+                """
+                _content = tar.extractfile(_target).read()
 
-            try:
-                #checking if _content is text, if so then return its decode() value
-                return _content.decode()
-            except UnicodeDecodeError:
-                #otherwise content is bytes, so just return it raw
-                return _content
+                try:
+                    #checking if _content is text, if so then return its decode() value
+                    return _content.decode()
+                except UnicodeDecodeError:
+                    #otherwise content is bytes, so just return it raw
+                    return _content
+        except KeyError:
+            raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
+                                       {target}")
+        
 
 _report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
