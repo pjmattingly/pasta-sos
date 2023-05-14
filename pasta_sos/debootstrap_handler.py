@@ -6,10 +6,9 @@ The use-case for this module is to create chroot directories for older/out of da
 
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 import os
-import atexit
+import util
 
 class Bad_Distro(Exception): pass
 
@@ -34,7 +33,7 @@ def _make_chroot(distro, _preserve=False):
     '''
     
     #global _chroot
-    _chroot = _make_temp_dir(not _preserve)
+    _chroot = util.make_temp_dir(not _preserve)
     chroot_path = Path(_chroot) / str(distro) #name the chroot directory after the distro we want
 
     '''
@@ -55,14 +54,3 @@ def _make_chroot(distro, _preserve=False):
     if res.returncode != 0: raise Bad_Distro( f"Distribution: '{distro}' not found." )
 
     return str(chroot_path)
-
-def _make_temp_dir(delete_on_program_exit=True):
-    '''
-    Make a temp directory that is removed on program exit.
-    '''
-    _dir = tempfile.mkdtemp()
-
-    if delete_on_program_exit:
-        atexit.register(lambda: shutil.rmtree(_dir, ignore_errors=True))
-
-    return _dir
