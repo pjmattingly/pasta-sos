@@ -25,11 +25,8 @@ class SosReport:
     def __init__(self, report):
         self._report = Path(report)
         #self._is_archive = False
-
-        if not ( self._report.exists() ):
-            raise DoesNotExist(f"Could not find sosreport: {self._report}")
         
-        if not (self._is_sosreport(self._report)):
+        if not ( self._is_sosreport(self._report) ):
             _r = self._report
             raise NotSosReport(
                 f"Sos report should be a tar.xz archive or a directory; instead: {_r}"
@@ -37,10 +34,32 @@ class SosReport:
         
     def _is_sosreport(self, report):
         _report = Path(report)
+
+        if not ( util.file_exists_and_is_readable(_report) ):
+            raise DoesNotExist(f"Could not access sosreport: {_report}")
+        
+        if ((_report.is_file() and tarfile.is_tarfile(_report))
+            or
+            self._report.is_dir()):
+            
+            # TODO? refactor here to only try to fetch the file, and look for
+            # FileNotFoundInReport to indicate file isn't found?
+            
+            if self._contains_file("version.txt"):
+                _content = self._get_file(self, "version.txt")
+                return ("sosreport" in _content)
+        
+        return False
+        
+
+        """
+        return 
+
         if _report.is_file():
             return self._is_archive_sosreport(report)
         else:
             return self._is_dir_sosreport(report)
+        """
 
     def _is_dir_sosreport(self, report):
         _report = Path(report)
@@ -70,8 +89,7 @@ class SosReport:
         if not (_report.exists() and _report.is_file()):
             return False
         
-        if not tarfile.is_tarfile(_report):
-            return False
+        
         
         """
         Check for 'version.txt' in the archive
@@ -130,6 +148,8 @@ class SosReport:
         else:
             return self._dir_contains_file(target)
 
+    #TODO, change these internal methods to take an argument of a report, rather
+    #than getting it off `self`
     def _dir_contains_file(self, target):
         _report = Path(self._report)
 
@@ -181,6 +201,9 @@ class SosReport:
             return False
 
     def get_file(self, target):
+        return self._get_file(self, target):
+
+    def _get_file(self, target):
         """
         Fetch the content of a file within the sosreport
         """
