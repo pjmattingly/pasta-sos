@@ -1,6 +1,7 @@
 import tarfile
 from pathlib import Path
-import util
+import pasta_sos.util as util
+import re
 
 class DoesNotExist(Exception):
     pass
@@ -181,3 +182,15 @@ class SosReport:
         except KeyError:
             raise FileNotFoundInReport(f"Could not find this file in the sosreport: \
                                        {target}")
+    
+    def ubuntu_code_name(self):
+        return self._ubuntu_code_name(self._report, self)
+    
+    def _ubuntu_code_name(self, report):
+        _content = self._get_file(report, 'sos_commands/release/lsb_release_-a')
+
+        #TODO, check for mis-match? Then we can throw on non-Ubuntu sosreport
+
+        # match something like: ^`Codename:       (jammy)`$
+        # where we treat each line as its own string w.r.t matching (re.MULTILINE)
+        return re.search(r'^Codename:\t(.+)$', _content, re.MULTILINE).groups()[0]
