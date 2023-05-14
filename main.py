@@ -9,6 +9,7 @@ import shutil
 import pasta_sos.debootstrap_handler as dh
 import pasta_sos.util as util
 import pasta_sos.lxc_handler as lh
+from pasta_sos.sosreport_handler import SosReport
 
 import pasta_sos.exceptions as exp
 from pathlib import Path
@@ -55,8 +56,8 @@ if __name__ == '__main__':
         raise exp.DebootstrapNotInstalled("Please install 'debootstrap'.")
     if not lh.is_installed():
         raise exp.LxcNotInstalled("Please install 'lxc'.")
-    if not hotsos_is_installed():
-        raise exp.HotsosNotInstalled("Please install 'hotsos'.")
+    #if not hotsos_is_installed():
+    #    raise exp.HotsosNotInstalled("Please install 'hotsos'.")
 
     # parsing CLI arguments
     parser = argparse.ArgumentParser(
@@ -70,11 +71,13 @@ if __name__ == '__main__':
 
     path = Path(args.sosreport[0]).absolute()
 
+    sos = SosReport(path)
+
     # check if path exists and is readable
-    assert_path_ok(path)
+    #assert_path_ok(path)
 
     # check if path is actually a sosreport
-    assert_is_sosreport(path)
+    #assert_is_sosreport(path)
 
     distro = get_ubuntu_code_name_from_sosreport(path)
 
