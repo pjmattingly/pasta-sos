@@ -184,7 +184,7 @@ class SosReport:
                                        {target}")
     
     def ubuntu_code_name(self):
-        return self._ubuntu_code_name(self._report, self)
+        return self._ubuntu_code_name(self._report)
     
     def _ubuntu_code_name(self, report):
         _content = self._get_file(report, 'sos_commands/release/lsb_release_-a')
