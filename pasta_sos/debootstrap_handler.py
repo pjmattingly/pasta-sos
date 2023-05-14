@@ -11,12 +11,8 @@ from pathlib import Path
 import os
 import pasta_sos.util as util
 
-class Bad_Distro(Exception):
+class BadDistro(Exception):
     pass
-
-#keep track of the chroot created, as allowing the TemporaryDirectory object to fall out
-# of scope, will trigger removing that directory
-#_chroot = None
 
 def is_installed():
     '''
@@ -35,7 +31,6 @@ def _make_chroot(distro, _preserve=False):
     Create temporary a chroot environment of a distribution of Ubuntu
     '''
     
-    #global _chroot
     _chroot = util.make_temp_dir(not _preserve)
     
     #name the chroot directory after the distro we want
@@ -59,6 +54,6 @@ def _make_chroot(distro, _preserve=False):
     os.chdir(_prev)
 
     if res.returncode != 0:
-        raise Bad_Distro( f"Distribution: '{distro}' not found." )
+        raise BadDistro( f"Distribution: '{distro}' not found." )
 
     return str(chroot_path)
