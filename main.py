@@ -2,9 +2,6 @@
 
 import argparse
 import os
-import re
-import subprocess
-import shutil
 
 import pasta_sos.debootstrap_handler as dh
 import pasta_sos.util as util
@@ -14,50 +11,11 @@ from pasta_sos.sosreport_handler import SosReport
 import pasta_sos.exceptions as exp
 from pathlib import Path
 
-def assert_path_ok(path):
-    """
-    checking that sosreport files are usable
-        see: https://docs.python.org/3/library/os.html#os.access
-    """
-
-    sosreport = Path(path)
-
-    if not sosreport.exists():
-        raise exp.SosreportNotFound()
-
-    if not os.access(sosreport, os.R_OK):
-        raise exp.SosreportUnreadable(
-            "Cannot read sosreport due to permission restrictions."
-            )
-
-
-def get_ubuntu_code_name_from_sosreport(path):
-    with open(f'{path}/sos_commands/release/lsb_release_-a', 'r') as f:
-        content = f.read()
-
-    # match something like: ^`Codename:       (jammy)`$
-    # where we treat each line as its own string w.r.t matching (re.MULTILINE)
-    return re.search(r'^Codename:\t(.+)$', content, re.MULTILINE).groups()[0]
-
-
-def hotsos_is_installed():
-    return bool(shutil.which('hotsos'))
-
-
-def assert_is_sosreport(path):
-    res = subprocess.run(['hotsos', path], capture_output=True)
-
-    if res.returncode != 0:
-        raise exp.NotSosreport(f"This folder is not a sosreport: {path}")
-
-
 if __name__ == '__main__':
     if not dh.is_installed():
         raise exp.DebootstrapNotInstalled("Please install 'debootstrap'.")
     if not lh.is_installed():
         raise exp.LxcNotInstalled("Please install 'lxc'.")
-    #if not hotsos_is_installed():
-    #    raise exp.HotsosNotInstalled("Please install 'hotsos'.")
 
     # parsing CLI arguments
     parser = argparse.ArgumentParser(
@@ -71,19 +29,14 @@ if __name__ == '__main__':
 
     path = Path(args.sosreport[0]).absolute()
 
+    #load the sosreport
     sos = SosReport(path)
 
-    # check if path exists and is readable
-    #assert_path_ok(path)
-
-    # check if path is actually a sosreport
-    #assert_is_sosreport(path)
-
-    distro = get_ubuntu_code_name_from_sosreport(path)
+    #get the distro name form the sosreport
+    distro = sos.ubuntu_code_name()
 
     # with the distro code-name in hand, make the chroot
     # (provided it's a real distro)
-    #chroot_path = dh.make_chroot_for_distro(distro, args['debug'])
     chroot_path = dh.make_chroot_for_distro(distro, args.debug)
 
     if args.debug:
