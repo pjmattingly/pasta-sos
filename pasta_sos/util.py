@@ -59,7 +59,8 @@ def make_metadata_yaml(distro, output_dir):
     '''
 
     _out = Path(output_dir)
-    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise BadTarget(f"Cannot write to '{_out.resolve()}'.")
+    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ):
+        raise BadTarget(f"Cannot write to '{_out.resolve()}'.")
     
     _content = f'''
     architecture: "x86_64"
@@ -71,30 +72,36 @@ def make_metadata_yaml(distro, output_dir):
     release: "{distro}"
     '''
 
-    _cleaned_content = "\n".join([line.strip() for line in _content.strip().split("\n")])
+    _clean_content = "\n".join([line.strip() for line in _content.strip().split("\n")])
     
     _out_file = _out / 'metadata.yaml'
-    _out_file.write_text(_cleaned_content)
+    _out_file.write_text(_clean_content)
 
     return str(_out_file.resolve())
 
 def chmod_777(target):
     '''
-    Given a path to a file, recursively `chmod` it to full read, write, and execute permissions
-    (this is used to address annoying permission issues with the output of debootstrap, etc.)
+    Given a path to a file, recursively `chmod` it to full read, write, and execute 
+    permissions
+    (this is used to address annoying permission issues with the output of debootstrap, 
+    etc.)
     '''
 
     _in = Path(target)
-    if not ( _in.exists() ): raise BadInput(f"Could not find: '{_in.resolve()}'.")
+    if not ( _in.exists() ):
+        raise BadInput(f"Could not find: '{_in.resolve()}'.")
 
     res = None
     if _in.is_file():
-        res = subprocess.run(['sudo', 'chmod', '777', str(_in.resolve())], capture_output=True)
+        _c = ['sudo', 'chmod', '777', str(_in.resolve())]
+        res = subprocess.run(_c, capture_output=True)
 
     if _in.is_dir():
-        res = subprocess.run(['sudo', 'chmod', '-R', '777', str(_in.resolve())], capture_output=True)
+        _c = ['sudo', 'chmod', '-R', '777', str(_in.resolve())]
+        res = subprocess.run(_c, capture_output=True)
 
-    if res.returncode != 0: raise ChmodError(f"Cannot change permissions on: {_in}; Giving up.")
+    if res.returncode != 0:
+        raise ChmodError(f"Cannot change permissions on: {_in}; Giving up.")
 
 def make_temp_dir(delete_on_program_exit=True):
     '''
