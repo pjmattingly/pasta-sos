@@ -1,7 +1,5 @@
 import tarfile
 from pathlib import Path
-#import os
-#import io
 import util
 
 class DoesNotExist(Exception):
@@ -16,10 +14,11 @@ class FileNotFoundInReport(Exception):
 class SosReport:
     """
     A class symbolizing a sosreport
-    a sosreport can be a folder or a compressed archive
+    a sosreport can be a folder or a compressed archive (tar.xz)
     normal workflows include:
         checking that the sosreport is valid by checking for a "version.txt" file
-        and extracting files from the sosreport
+        extracting files from the sosreport
+        checking for presence of files in a sosreport
     """
 
     def __init__(self, report):
@@ -32,6 +31,13 @@ class SosReport:
                 )
         
     def _is_sosreport(self, report):
+        """
+        An sosreport always seems to contain a "version.txt" file that appears to
+        be separate from the files from the target computer.
+        This file contains information about the sosreport version used and so
+        checking for the string "sosreport" in this file can be used as a method to 
+        determine if `report` is a path to an actual sosreport.
+        """
         _report = Path(report)
 
         if not ( util.file_exists_and_is_readable(_report) ):
@@ -40,83 +46,28 @@ class SosReport:
         if ((_report.is_file() and tarfile.is_tarfile(_report))
             or
             _report.is_dir()):
-
-            #DEBUG
-            print("#DEBUG: File is tar archive or dir.")
             
-            # TODO? refactor here to only try to fetch the file, and look for
-            # FileNotFoundInReport to indicate file isn't found?
-            
-            if self._contains_file("version.txt"):
-                _content = self._get_file("version.txt")
+            try:
+                _content = self._get_file(report, "version.txt")
                 return ("sosreport" in _content)
+            except FileNotFoundInReport:
+                pass
         
         return False
 
     def contains_file(self, target):
-        return self._contains_file(target)
+        return self._contains_file(self._report, target)
     
-    def _contains_file(self, target):
+    def _contains_file(self, report, target):
         """
         Check if a file is present in the sosreport
         """
         
-        if self._report.is_file():
-            return self._archive_contains_file(target)
-        else:
-            return self._dir_contains_file(target)
-
-    #TODO, change these internal methods to take an argument of a report, rather
-    #than getting it off `self`
-    def _dir_contains_file(self, target):
-        _report = Path(self._report)
-
-        _target = _report / str(target)
-
-        if not (_target.exists()):
-            return False
-        
-        return True
-
-    def _archive_contains_file(self, target):
-        _report = Path(self._report)
-
-        """
-        a standard pattern for sos report archives seems to be that the root of the
-        report is nested inside a containing folder
-        where the folder name is the name of the archive without an extension
-            for example:
-            sosreport-veteran-margay-test-42-2023-02-26-yevmkut.tar.xz
-
-            contains a folder named:
-            sosreport-veteran-margay-test-42-2023-02-26-yevmkut
-
-            which acts as the root of the report
-        so all calls to TarFile.getmember() should use this "root name" as a prefix when
-        locating files to extract
-        """
-        _root_name = _report.with_suffix('').stem
-        _file_name = str(target)
-        _target = _root_name + "/" + _file_name
-
         try:
-            with tarfile.open(_report) as tar: 
-                """
-                get the content of the _target file
-                TarFile.extractfile() returns a io.BufferedReader()
-                for ease of use, it can be wrapped in a io.TextIOWrapper()
-                and treated like a regular file handle similar to that returned from
-                open()
-                    see:
-                    https://docs.python.org/3/library/tarfile.html#tarfile.TarFile.extractfile
-                    https://docs.python.org/3/library/io.html#io.BufferedReader
-                    https://stackoverflow.com/q/51468724
-                """
-                tar.getmember(_target)
-                return True
-        except KeyError:
-            #if not found in the archive
+            self._get_file(self, report, target)
+        except FileNotFoundInReport:
             return False
+        return True
 
     def get_file(self, target):
         return self._get_file(self, self._report, target)
@@ -135,9 +86,9 @@ class SosReport:
         """
         
         if _report.is_file():
-            return self._archive_get_file(target)
+            return self._archive_get_file(report, target)
         else:
-            return self._dir_get_file(target)
+            return self._dir_get_file(report, target)
     
     def _dir_get_file(self, report, target):
         """
@@ -232,17 +183,19 @@ class SosReport:
                                        {target}")
         
 
-_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
+#_report = '/home/peter/dev/sosreport-veteran-margay-test-42-2023-02-26-yevmkut'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar'
 #_report = '/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar.xz'
+_report = 'test'
 _SOS = SosReport(_report)
 
-#res = _SOS._archive_get_file('usr/share/zoneinfo/America/Edmonton')
-#res = _SOS._archive_get_file('version.txt')
-#res = _SOS._archive_get_file('sos_logs/sos.log')
-
+#res = _SOS._get_file(_report, 'usr/share/zoneinfo/America/Edmonton')
+#res = _SOS._get_file(_report, 'version.txt')
+#res = _SOS._get_file(_report, 'sos_logs/sos.log')
 #print(res)
-print( _SOS._is_sosreport("test") )
+
+#print( _SOS._is_sosreport("test") )
+#print( _SOS._is_sosreport('/home/peter/dev/sosreport-peter-virtual-machine-2023-04-16-nqsngbd.tar') )
 
 #_report = Path("test")
 #print(_report.is_file())
