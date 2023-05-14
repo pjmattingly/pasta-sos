@@ -11,7 +11,8 @@ from pathlib import Path
 import os
 import pasta_sos.util as util
 
-class Bad_Distro(Exception): pass
+class Bad_Distro(Exception):
+    pass
 
 #keep track of the chroot created, as allowing the TemporaryDirectory object to fall out
 # of scope, will trigger removing that directory
