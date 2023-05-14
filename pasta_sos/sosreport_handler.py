@@ -144,8 +144,6 @@ class SosReport:
         _report = Path(self._report)
 
         """
-        Check for 'version.txt' in the archive
-
         a standard pattern for sos report archives seems to be that the root of the
         report is nested inside a containing folder
         where the folder name is the name of the archive without an extension
@@ -223,8 +221,8 @@ class SosReport:
             sosreport-veteran-margay-test-42-2023-02-26-yevmkut
 
             which acts as the root of the report
-        so all calls to TarFile.getmember() should use this "root name" as a prefix when
-        locating files to extract
+        so all calls to TarFile.extractfile() should use this "root name" as a prefix 
+        when locating files to extract
         """
         _root_name = _report.with_suffix('').stem
         _file_name = str(target)
