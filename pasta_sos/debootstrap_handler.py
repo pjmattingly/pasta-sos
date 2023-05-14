@@ -8,7 +8,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import os
-import util
+import pasta_sos.util as util
 
 class Bad_Distro(Exception): pass
 
