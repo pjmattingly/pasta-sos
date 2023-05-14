@@ -16,9 +16,9 @@ import io
 
 class BadInput(Exception):
     pass
-class Bad_Target(Exception):
+class BadTarget(Exception):
     pass
-class Chmod_Error(Exception):
+class ChmodError(Exception):
     pass
 class FileNotFound(Exception):
     pass
@@ -32,9 +32,9 @@ def tar_gzip(source, output_dir, **kwargs):
     _out = Path(output_dir)
 
     if not ( _in.exists() ):
-        raise Bad_Input(f"Could not compress '{_in.resolve()}'.")
+        raise BadInput(f"Could not compress '{_in.resolve()}'.")
     if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ):
-        raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
+        raise BadTarget(f"Cannot write to '{_out.resolve()}'.")
 
     if "name" in kwargs:
         _out = _out / f"{kwargs['name']}.tar.gz"
@@ -59,7 +59,7 @@ def make_metadata_yaml(distro, output_dir):
     '''
 
     _out = Path(output_dir)
-    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise Bad_Target(f"Cannot write to '{_out.resolve()}'.")
+    if not ( _out.exists() and _out.is_dir() and os.access(_out, os.W_OK | os.X_OK) ): raise BadTarget(f"Cannot write to '{_out.resolve()}'.")
     
     _content = f'''
     architecture: "x86_64"
@@ -85,7 +85,7 @@ def chmod_777(target):
     '''
 
     _in = Path(target)
-    if not ( _in.exists() ): raise Bad_Input(f"Could not find: '{_in.resolve()}'.")
+    if not ( _in.exists() ): raise BadInput(f"Could not find: '{_in.resolve()}'.")
 
     res = None
     if _in.is_file():
@@ -94,7 +94,7 @@ def chmod_777(target):
     if _in.is_dir():
         res = subprocess.run(['sudo', 'chmod', '-R', '777', str(_in.resolve())], capture_output=True)
 
-    if res.returncode != 0: raise Chmod_Error(f"Cannot change permissions on: {_in}; Giving up.")
+    if res.returncode != 0: raise ChmodError(f"Cannot change permissions on: {_in}; Giving up.")
 
 def make_temp_dir(delete_on_program_exit=True):
     '''
@@ -112,7 +112,7 @@ def is_text(file):
 
 def _is_text(file_or_stream):
     """
-    Detect if a file is text or not
+    Detect if a file or stream is text or not
         Query the unix command `file` via the python binding from:
         https://pypi.org/project/python-magic/
 
