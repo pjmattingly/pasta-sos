@@ -1,83 +1,45 @@
+#!/usr/bin/env python
+
 import argparse
 import os
-import re
-import subprocess
-import shutil
 
-import lib.debootstrap_handler as dh
-import lib.util as util
-import lib.lxc_handler as lh
+import pasta_sos.debootstrap_handler as dh
+import pasta_sos.util as util
+import pasta_sos.lxc_handler as lh
+from pasta_sos.sosreport_handler import SosReport
 
-from lib.exceptions import *
+import pasta_sos.exceptions as exp
 from pathlib import Path
-
-
-def assert_path_ok(path):
-    """
-    checking that sosreport files are usable
-        see: https://docs.python.org/3/library/os.html#os.access
-    """
-
-    sosreport = Path(path)
-
-    if not sosreport.exists():
-        raise SosreportNotFound()
-
-    if not os.access(sosreport, os.R_OK):
-        raise SosreportUnreadable("Cannot read sosreport due to permission restrictions.")
-
-
-def get_ubuntu_code_name_from_sosreport(path):
-    with open(f'{path}/sos_commands/release/lsb_release_-a', 'r') as f:
-        content = f.read()
-
-    # match something like: ^`Codename:       (jammy)`$
-    # where we treat each line as its own string w.r.t matching (re.MULTILINE)
-    return re.search(r'^Codename:\t(.+)$', content, re.MULTILINE).groups()[0]
-
-
-def hotsos_is_installed():
-    return bool(shutil.which('hotsos'))
-
-
-def assert_is_sosreport(path):
-    res = subprocess.run(['hotsos', path], capture_output=True)
-
-    if res.returncode != 0:
-        raise NotSosreport(f"This folder is not a sosreport: {path}")
-
 
 if __name__ == '__main__':
     if not dh.is_installed():
-        raise DebootstrapNotInstalled("Please install 'debootstrap'.")
+        raise exp.DebootstrapNotInstalled("Please install 'debootstrap'.")
     if not lh.is_installed():
-        raise LxcNotInstalled("Please install 'lxc'.")
-    if not hotsos_is_installed():
-        raise HotsosNotInstalled("Please install 'hotsos'.")
+        raise exp.LxcNotInstalled("Please install 'lxc'.")
 
     # parsing CLI arguments
     parser = argparse.ArgumentParser(
-        description='Given a sosreport from a system, create a pseudo-copy in a virtual machine.')
-    parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder containing a sosreport.')
-    parser.add_argument('--debug', type=bool, action='store_true', help='add debug output')
-    parser.add_argument('-v', '--verbose', type=bool, action='store_true', help='add verbosity')
+        description='Given a sosreport from a system, create a pseudo-copy in a \
+            virtual machine.')
+    parser.add_argument('sosreport', type=str, nargs=1, help='a path to a folder \
+                        containing a sosreport.')
+    parser.add_argument('--debug', action='store_true', help='add debug output')
+    parser.add_argument('-v', '--verbose', action='store_true', help='add verbosity')
     args = parser.parse_args()
 
     path = Path(args.sosreport[0]).absolute()
 
-    # check if path exists and is readable
-    assert_path_ok(path)
+    #load the sosreport
+    sos = SosReport(path)
 
-    # check if path is actually a sosreport
-    assert_is_sosreport(path)
-
-    distro = get_ubuntu_code_name_from_sosreport(path)
+    #get the distro name form the sosreport
+    distro = sos.ubuntu_code_name()
 
     # with the distro code-name in hand, make the chroot
     # (provided it's a real distro)
-    chroot_path = dh.make_chroot_for_distro(distro, args['debug'])
+    chroot_path = dh.make_chroot_for_distro(distro, args.debug)
 
-    if args['debug']:
+    if args.debug:
         print(f"Path to tmp chroot dir: {chroot_path}")
 
     # set 777 on chroot to avoid recurring permission issues
@@ -92,15 +54,18 @@ if __name__ == '__main__':
 
     '''
     ISSUE
-    If an absolute path for metadata.yaml is passed to tar, then tar will reflect that path within the archive
-    to avoid this issue, change the working directory to where the metadata.yaml file is and then change back after the archive is made
+    If an absolute path for metadata.yaml is passed to tar, then tar will reflect that 
+        path within the archive
+    to avoid this issue, change the working directory to where the metadata.yaml file is
+      and then change back after the archive is made
     '''
     _prev = os.getcwd()
     os.chdir(Path(_target))
     metadata_archive_path = util.tar_gzip(Path(metadata_path).name, _target)
     os.chdir(Path(_prev))
 
-    # finally, import the chroot into lxc via: `lxc image import <metadata> <rootfs> --alias <name>`
+    # finally, import the chroot into lxc via: 
+    # `lxc image import <metadata> <rootfs> --alias <name>`
     vm_name = lh.import_chroot(rootfs_path, metadata_archive_path, path.stem)
 
     done_message = "\n".join(

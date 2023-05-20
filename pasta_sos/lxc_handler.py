@@ -8,7 +8,8 @@ import shutil
 import subprocess
 import shortuuid
 
-class LXC_Error(Exception): pass
+class LXCError(Exception):
+    pass
 
 def is_installed():
     '''
@@ -24,8 +25,11 @@ def import_chroot(rootfs, metadata, vm_name):
     
     _name = f"{vm_name}_{shortuuid.ShortUUID().random(length=5)}"
 
-    res = subprocess.run(['sudo', 'lxc', 'image', 'import', str(metadata), str(rootfs), '--alias', str(_name)], capture_output=True)
+    _c = ['sudo', 'lxc', 'image', 'import', str(metadata), str(rootfs), '--alias', 
+          str(_name)]
+    res = subprocess.run(_c, capture_output=True)
 
-    if res.returncode != 0: raise LXC_Error(res.stderr.decode())
+    if res.returncode != 0:
+        raise LXCError(res.stderr.decode())
     
     return _name
