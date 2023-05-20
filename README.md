@@ -2,7 +2,7 @@
 Create a virtual machine from a sosreport, to allow for easier replication and troubleshooting.
 
 ## Version
-v0.2.0
+v0.2.1
 
 ## Description
 A common task when troubleshooting client systems is to replicate a system for testing. This may be done to isolate a bug or to attempt fixes without harming client installations. A common tool to do this is `sosreport` (see: https://github.com/sosreport/sos). `sosreport` gathers detailed information about a client's system into a single package which then can be handed off to support for the purposes of information gathering or replication. Replication is often done manually, given the information in a sosreport. This project attempts to automate the process of replication.
@@ -16,8 +16,6 @@ At a high level this project completes several steps:
 3) With the Ubuntu environment bootstrapped, it is then imported as an image into `lxc`; see: https://linuxcontainers.org/lxc/introduction/.
 
 Finally, any container created from the image should be a usable Ubuntu environment whose version matches the information found in the sosreport.
-
-Note, that this project also depends on `hotsos` for parsing and validating sosreports; see: https://github.com/canonical/hotsos.
 
 Feedback on usage is appreciated, and recommendations on features and improvements are encouraged; see the discussion forum: https://github.com/pjmattingly/pasta-sos/discussions/categories/ideas.
 
@@ -33,8 +31,7 @@ This tool is in an alpha state and will likely break. Please use the [Issues](ht
 1) Install `debootstrap`; `sudo apt install debootstrap`.
 2) Install `lxc`; `sudo apt install lxc`.
 3) Run lxc initialization; `sudo lxd init`.
-4) Install `hotsos`; `sudo snap install hotsos --classic`; See: https://github.com/canonical/hotsos#install.
-5) Install `python`; `sudo apt install python3.10`; see: https://www.python.org/downloads/.
+4) Install `python`; `sudo apt install python3.10`; see: https://www.python.org/downloads/.
 5) Install `pip`; `sudo apt install python3-pip`; see: https://pip.pypa.io/en/stable/installation/.
 6) Install `poetry`; `curl -sSL https://install.python-poetry.org | python3 -`; see: https://python-poetry.org/docs/#installing-with-the-official-installer
 7) Clone the repository `git clone https://github.com/pjmattingly/pasta-sos`; see: https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository.
@@ -80,4 +77,4 @@ Second, snapshot support. It would be very helpful to complete an installation, 
 
 Third, support for `cloud-init`. `cloud-init` is a means for "cloud instance initialization" (https://cloudinit.readthedocs.io/en/latest/). As such, specifying packages to be added to the virtual machine produced by `pasta-sos` with `cloud-init` seems to be a reasonable approach for further duplicating the state of client systems.
 
-Other future ideas: More human readable image names (e.g., based off case numbers). Backups. Tools for inducing rare real-world scenarios with the virtual machines (for example, packet loss, out of memory, out of storage space, etc.). Support for other virtualisation back-ends (e.g., libvirt, uvt-kvm, etc). Support for the creation of networks of virtual machines to mimic complex deployments on the client-side (perhaps with k8s?). Duplication of running service configurations, given configuration files and information from a client machine. Cloning hardware configurations; For example, a client machine may have two network interfaces, and a variety of storage devices, a pasta-sos virtual machine should mimic this configuration.
+Other future ideas: More human readable image names (e.g., based off case numbers). Backups. Tools for inducing rare real-world scenarios with the virtual machines (for example, packet loss, out of memory, out of storage space, etc.). Support for detecting or configuring other virtualisation back-ends (e.g., KVM). Support for the creation of networks of virtual machines to mimic complex deployments on the client-side (perhaps with k8s?). Duplication of running service configurations, given configuration files and information from a client machine. Cloning hardware configurations; For example, a client machine may have two network interfaces, and a variety of storage devices, a pasta-sos virtual machine could mimic this configuration.
