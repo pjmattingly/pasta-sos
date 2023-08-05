@@ -1,0 +1,1 @@
+git clone https://github.com/canonical/se-support-reproducer-templates.git
