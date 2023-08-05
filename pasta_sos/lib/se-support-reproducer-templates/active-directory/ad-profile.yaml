@@ -1,0 +1,22 @@
+config:
+  cloud-init.user-data: |
+    #cloud-config
+    package_update: true
+    package_upgrade: true
+    packages:
+      - sssd-ad
+      - sssd-tools
+      - realmd
+      - adcli
+      - samba-common-bin
+      - policykit-1
+      - packagekit
+    runcmd:
+      - echo "DNS=<Windows IP here!>" >> /etc/systemd/resolved.conf
+      - echo "[libdefaults]\ndefault_realm = EXAMPLE.COM\nrdns = false" > /etc/krb5.conf
+      - systemctl restart systemd-resolved
+      - echo 'Passw0rd' | realm join example.com
+      - pam-auth-update --enable mkhomedir
+      - echo 'ad_gpo_access_control = disabled' >> /etc/sssd/sssd.conf
+      - systemctl restart sssd
+description: AD-Joined Computer

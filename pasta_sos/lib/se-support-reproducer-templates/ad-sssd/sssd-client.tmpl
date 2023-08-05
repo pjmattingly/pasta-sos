@@ -1,0 +1,60 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+fqdn: client_hostname.dns_domain
+hostname: client_hostname
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    passwd: user_passwd
+    ssh_authorized_keys:
+      - ssh_pubkey
+packages:
+ - adcli
+ - debconf-utils
+ - krb5-user
+ - libnss-sss
+ - libpam-sss
+ - openssh-server
+ - packagekit
+ - realmd
+ - samba-common
+ - sssd
+ - sssd-tools
+write_files:
+  - path: "/tmp/krb5-config.debconf"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      krb5-config     krb5-config/add_servers_realm   string sssd_realm
+      krb5-config     krb5-config/default_realm       string sssd_realm
+      krb5-config     krb5-config/read_conf           boolean true
+  - path: "/tmp/post-install.sh"
+    permissions: "0755"
+    owner: "root"
+    # Because these aren't in DNS, we stuff in the IPs manually, but we can't
+    # do it with variables here, because the DHCP IP isn't known yet, so must
+    # execute it inside the booted, networked machine
+    content: |
+      #!/bin/bash
+      echo '127.0.0.1 localhost' > /etc/hosts
+      echo "ad_server_ip  server_hostname server_hostname.dns_domain" >> /etc/hosts
+      echo "$(hostname -I)  $(hostname) $(hostname).dns_domain" >> /etc/hosts
+  - path: "/etc/systemd/resolved.conf"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Resolve]
+      DNS=ad_server_ip
+      Domains=sts.test
+runcmd:
+  - [ /tmp/post-install.sh ]
+  - [ mv, /etc/krb5.conf, /etc/krb5.conf.orig ]
+  - [ debconf-set-selections, /tmp/krb5-config.debconf ]
+  - [ dpkg-reconfigure, -fnoninteractive, krb5-config ]
+  - [ systemctl, restart, systemd-resolved ]

@@ -1,0 +1,73 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+package_update: true
+package_upgrade: true
+apt_pipelining: 8
+fqdn: landscape-lab.sts
+hostname: landscape-lab
+ssh_pwauth: True
+password: ubuntu
+chpasswd: { expire: False }
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    ssh_redirect_user: false
+apt:
+  sources:
+    landscape-ppa-list:
+      source: "ppa:landscape/19.10"
+early_commands:
+  commands:
+    # Installing this dependency before landscape because this presents a dialog that fails with timeout otherwise
+    00: "debconf-set-selections <<< \"postfix postfix/mailname string landscape-lab\""
+    01: "debconf-set-selections <<< \"postfix postfix/main_mailer_type string 'Internet Site'\""
+    02: "apt-get install --assume-yes postfix"
+packages:
+  - landscape-server-quickstart
+  # Installing the api package from the ppa instead of the snap because it can't read the SSL outside the snap
+  - landscape-api
+landscape:
+    client:
+        url: "https://landscape-lab/message-system"
+        ping_url: "http://landscape-lab/ping"
+        data_path: "/var/lib/landscape/client"
+        tags: "server,cloud"
+        computer_title: "landscape-lab"
+        account_name: "standalone"
+        ssl_public_key: "/etc/ssl/certs/landscape_server.pem"
+        script_users: "ALL"
+        include_manager_plugins: "ScriptExecution"
+write_files:
+  # Writing to /root and copying to /home/ubuntu because writing to /home/ubuntu broke directory ownership
+  - path: "/root/.landscape-api"
+    permissions: "0640"
+    owner: root:root
+    content: |
+      export LANDSCAPE_API_KEY=""
+      export LANDSCAPE_API_SECRET=""
+      export LANDSCAPE_API_URI="https://landscape-lab/api/"
+      export LANDSCAPE_API_SSL_CA_FILE="/etc/ssl/certs/landscape_server_ca.crt"
+  - path: "/usr/bin/landscape-phase2.sh"
+    permissions: "755"
+    owner: root:root
+    content: |
+      echo -e "\n\nUpdate your local hosts file\nsudo echo $(hostname -I) $(hostname) >> /etc/hosts\n"
+      echo -e "Then load the Landscape web interface and create your admin account: https://$(hostname)\n"
+      echo -e "This machine should already have a pending registration in the Landsacpe web interface"
+      echo -e "If there is no pending registration run: 'sudo landscape-config --silent'\n"
+      echo -e "To configure the landsacpe-api credentials generate API credentials here:"
+      echo -e "https://landscape-lab/account/standalone/administrators"
+      echo -e "Then configure those credentials in ~/.landscape-api and run 'source ~/.bashrc'\n\n"
+runcmd:
+  - "cp /root/.landscape-api /home/ubuntu/; chown ubuntu: /home/ubuntu/.landscape-api"
+  - "echo 'source ~/.landscape-api' >> /root/.bashrc"
+  - "echo 'source ~/.landscape-api' >> /home/ubuntu/.bashrc"
+  - "echo 'Updating local /etc/hosts file'; echo $(hostname -I) $(hostname) >> /etc/hosts"
+  - 'echo "\n\n\n\n\n\tFor next steps run landscape-phase2.sh \n\n\n\n\n"'
+# uvt-kvm create landscape-lab release=bionic arch=amd64 --memory 4096 --cpu 4 --disk 20 --host-passthrough --user-data lds.yaml

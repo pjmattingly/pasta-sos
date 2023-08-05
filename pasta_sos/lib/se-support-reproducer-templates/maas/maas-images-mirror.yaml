@@ -1,0 +1,71 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+package_update: true
+package_upgrade: true
+manage_etc_hosts: true
+apt_pipelining: true
+fqdn: maas-images-mirror.maas
+ssh_pwauth: True
+password: ubuntu
+chpasswd: { expire: False }
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    ssh_redirect_user: false
+packages:
+  - jq
+  - simplestreams
+  - lighttpd
+  - tree
+  - mlocate
+  - ubuntu-cloudimage-keyring
+write_files:
+  - path: /usr/local/bin/sync-maas-images.sh
+    permissions: "0700"
+    owner: "root"
+    content: |
+      #!/bin/bash
+
+      keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg
+      release=stable
+      version=3
+      image_src=https://images.maas.io/ephemeral-v${version}
+      image_dir=/var/www/html/maas/images/ephemeral-v${version}
+
+      sstream-mirror --keyring=${keyring} ${image_src}/${release} ${image_dir}/${release} 'arch=amd64' 'release~(trusty|xenial|bionic|focal|groovy|hirsute|centos70|8)' --max=2 --progress --verbose
+      sstream-mirror --keyring=${keyring} ${image_src}/${release} ${image_dir}/${release} 'os~(grub*|pxelinux)' --max=2 --progress --verbose
+  - path: /etc/systemd/system/sync-maas-images.service
+    permissions: "0644"
+    owner: root
+    content: |
+      [Unit]
+      Description=Sync MAAS images to webroot every 6h
+
+      [Service]
+      Type=simple
+      ExecStart=/bin/bash /usr/local/bin/sync-maas-images.sh
+  - path: /etc/systemd/system/sync-maas-images.timer
+    permissions: "0644"
+    owner: root
+    content: |
+      [Unit]
+      Description=Sync MAAS images to webroot every 6h
+
+      [Timer]
+      OnBootSec=30min
+      OnCalendar=00/6:00
+      Persistent=true
+      Unit=sync-maas-images.service 
+
+      [Install]
+      WantedBy=timers.target
+runcmd:
+  - systemctl enable sync-maas-images.timer
+  - systemctl start sync-maas-images.timer
+  - systemctl start sync-maas-images.service

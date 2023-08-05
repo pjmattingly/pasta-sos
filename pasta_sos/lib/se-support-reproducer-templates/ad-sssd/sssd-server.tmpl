@@ -1,0 +1,63 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+fqdn: server_hostname.dns_domain
+hostname: server_hostname
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    passwd: user_passwd
+    ssh_authorized_keys:
+      - ssh_pubkey
+packages:
+ - crudini
+ - debconf-utils
+ - krb5-kdc
+ - libnss-winbind
+ - libpam-krb5
+ - libpam-winbind
+ - net-tools
+ - openssh-server
+ - samba
+ - smbclient
+ - winbind
+write_files:
+  - path: "/tmp/krb5-config.debconf"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      krb5-config     krb5-config/add_servers_realm   string sssd_realm
+      krb5-config     krb5-config/default_realm       string sssd_realm
+      krb5-config     krb5-config/read_conf           boolean true
+  - path: "/tmp/post-install.sh"
+    permissions: "0755"
+    owner: "root"
+    # Because these aren't in DNS, we stuff in the IPs manually, but we can't
+    # do it with variables here, because the DHCP IP isn't known yet, so must
+    # execute it inside the booted, networked machine
+    content: |
+      #!/bin/bash
+      echo '127.0.0.1 localhost' > /etc/hosts
+      echo "$(hostname -I)  $(hostname) $(hostname).dns_domain" >> /etc/hosts
+runcmd:
+  - [ /tmp/post-install.sh ]
+  - [ mv, /etc/samba/smb.conf, /etc/samba/smb.conf.orig ]
+  - [ mv, /etc/krb5.conf, /etc/krb5.conf.orig ]
+  - [ debconf-set-selections, /tmp/krb5-config.debconf ]
+  - [ dpkg-reconfigure, -fnoninteractive, krb5-config ]
+  - [ samba-tool, domain, provision, --use-rfc2307, --realm=sssd_realm, --domain=krb5_domain, "--adminpass=$krb5_passwd" ]
+  - [ systemctl, mask, smbd, nmbd, winbind ]
+  - [ systemctl, disable, smbd, nmbd, winbind ]
+  - [ systemctl, stop, smbd, nmbd, winbind ]
+  - [ systemctl, unmask, samba-ad-dc ]
+  - [ systemctl, start, samba-ad-dc ]
+  - [ systemctl, enable, samba-ad-dc ]
+  - [ cp, /var/lib/samba/private/krb5.conf, /etc ]
+  - [ systemctl, stop, systemd-resolved.service ]
+  - [ systemctl, disable, systemd-resolved.service ]
+  - [ systemctl, restart, samba-ad-dc ]

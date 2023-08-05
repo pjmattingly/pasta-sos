@@ -1,0 +1,34 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+package_update: false
+package_upgrade: false
+manage_etc_hosts: true
+apt_pipelining: true
+fqdn: microk8s-test.lab
+ssh_pwauth: True
+password: ubuntu
+chpasswd: { expire: False }
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    ssh_redirect_user: false
+runcmd:
+  - "sed -i 's,_LINUX=\"\",_LINUX=\"ipv6.disable=1\",' /etc/default/grub"
+  - "update-grub"
+packages:
+  - jq
+  - snapd
+  - lm-sensors
+  - openssh-server
+runcmd:
+  - [snap, install, microk8s, --classic]
+  - [snap, alias, microk8s.kubectl, kubectl]
+  - [usermod, -a, -G, microk8s, ubuntu]
+  - [microk8s, enable, dashboard]
+  - "microk8s.config show > /tmp/kube.config"

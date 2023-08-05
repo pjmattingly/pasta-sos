@@ -1,0 +1,172 @@
+#cloud-config
+no-log-init: true
+preserve_hostname: false
+package_update: true
+package_upgrade: true
+manage_etc_hosts: true
+apt_pipelining: true
+fqdn: automaastic-ppa.lab.maas
+snap:
+  commands:
+    00: "snap install lxd"
+ssh_pwauth: True
+password: ubuntu
+chpasswd: { expire: False }
+users:
+  - default
+  - name: ubuntu
+    gecos: Ubuntu User
+    primary_group: ubuntu
+    groups: users
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    ssh_redirect_user: false
+early_commands:
+  commands:
+    00: "apt -y purge lxd lxd-client liblxc1 lxcfs"
+    01: "apt -y autoremove"
+packages:
+  - libvirt-daemon
+  - iftop
+  - iotop
+  - glances
+  - postgresql
+  - jq
+lxd:
+  init:
+    network_address: 0.0.0.0
+    network_port: 8443
+    trust_password: maas
+  bridge:
+    mode: new
+    name: lxdbr0
+    ipv4_address: 10.100.10.1
+    ipv4_netmask: 24
+    ipv4_dhcp: true
+    ipv4_nat: true
+    ipv6_address: none
+    ipv6_dhcp: false
+    domain: default
+write_files:
+  - path: /var/tmp/automaas_config
+    permissions: "0644"
+    owner: "root"
+    content: |
+      maas_password=maas
+      launchpad_user=CHANGEME
+      MAAS_IP=$(hostname -I | awk '{print $1}')
+      LXD_IP=$(ip -o -4 a | awk -F'[ /]' '/lxdbr0/{print $7}')
+      CIDR=$(echo ${LXD_IP}/24)
+      VIRSH_GATEWAY=$(ip route | awk '/^default/{print $3}')
+
+      # If you have a local images mirror as described in this document, then you can configure this so that it will be added during setup
+      # https://maas.io/docs/snap/2.9/ui/local-image-mirror#heading--set-up-local-mirror
+
+      # The full URL of your local image mirror
+      maas_boot_source=""
+
+  - path: "/usr/local/bin/maas-login.sh"
+    permissions: "0755"
+    owner: "root"
+    content: |
+      maas login admin http://$(hostname -I | awk '{print $1}'):5240/MAAS/api/2.0/ $(cat ~/.maas-api.key)
+
+  - path: "/var/tmp/maas-phase2.sh"
+    permissions: "0755"
+    owner: "root"
+    content: |
+      #!/bin/bash
+      . /var/tmp/automaas_config
+
+      echo "Double checking that LXD is snapped and version 4.x"
+        which lxd; which lxc; lxc version; echo
+
+      echo Log into the MAAS WebUI \(http://$(hostname -I | awk '{print $1}'):5240\): admin:${maas_password}
+      echo Create a KVM \(type LXD\) with these settings:
+      LXD_IP=$(ip -o -4 a | awk -F'[ /]' '/lxdbr0/{print $7}')
+      echo LXD: ${LXD_IP}:8443
+      echo Password: ${maas_password}
+      echo KVM: http://${MAAS_IP}:5240/MAAS/l/kvm
+      read -p "Press [Enter] to continue after the KVM has been created ... " pause
+
+      echo Logging into MAAS cli as admin user
+      maas login admin http://${MAAS_IP}:5240/MAAS/api/2.0/ $(cat ~/.maas-api.key)
+
+      # For reference, this does not work for the first KVM created from CLI, requires a KVM setup from WebUI first
+      # echo Creating MAAS LXD KVM; maas admin pods create -k type=lxd power_address=${LXD_IP}:8443 power_pass=${maas_password}
+      echo "Updating LXD KVM for Overcommit"; maas admin pod update 1 cpu_over_commit_ratio=10 memory_over_commit_ratio=10
+
+      # If a local image mirror is defined, configure it within MAAS
+      if [ $maas_boot_source ]; then maas admin boot-source update 1 url=${maas_boot_source}; maas admin boot-resources import; fi
+
+      # This makes the script wait until the images are all downloaded to the region controller
+      echo -ne "Waiting for images to download to Region Controller"
+        until [ "$(maas admin boot-resources is-importing)" = false ]; do sleep 3; echo -ne "."; done; echo;
+
+      echo -ne "Waiting for images to sync to Rack Controller"
+      rack_id=$(maas admin rack-controllers read | jq -r '.[].system_id')
+      while [[ ! $(maas admin rack-controller list-boot-images $rack_id | jq -r '.status') == 'synced' ]]; do
+        sleep 3; echo -ne "."; done
+
+      echo "Composing first LXD VMs"; set -x
+        maas admin pod compose 1 memory=2048 cpu=1;
+
+  - path: "/var/tmp/lxd-init.yaml"
+    permissions: "0755"
+    owner: "root"
+    content: |
+      config:
+        core.https_address: '[::]:8443'
+        core.trust_password: maas
+        images.auto_update_interval: "0"
+      networks:
+      - config:
+          ipv4.address: 10.100.10.1/24
+          ipv4.dhcp: "true"
+          ipv4.nat: "true"
+          ipv6.address: none
+        description: ""
+        name: lxdbr0
+        type: bridge
+        project: default
+      storage_pools:
+      - config:
+          source: /var/snap/lxd/common/lxd/storage-pools/datastore
+        description: ""
+        name: datastore
+        driver: dir
+      profiles:
+      - config: {}
+        description: Default LXD profile
+        devices:
+          eth0:
+            name: eth0
+            network: lxdbr0
+            type: nic
+          root:
+            path: /
+            pool: datastore
+            type: disk
+        name: default
+runcmd:
+  # Source the config variables from the written file
+  - ". /var/tmp/automaas_config"
+  # If LXD exists from both snap and deb, remove the deb and re-init LXD (Bionic Workaround)
+  - "if [ -x /usr/bin/lxc ]; then apt purge -y lxd lxd-client; apt -y autoremove; lxd init --preseed < /tmp/lxd-init.yaml; fi"
+  # Instasll MAAS from PPA
+  - "apt-add-repository -yu ppa:maas/2.8"
+  - "apt -y install maas"
+  # Create the MAAS admin user, and import LP:SSH key
+  - "if [ -z ${launchpad_user} || ${launchpad_user} == CHANGEME ]; then maas createadmin --username admin --password ${maas_password} --email admin@maas.test; fi"
+  - "if [ -n ${launchpad_user} ]; then maas createadmin --username admin --password ${maas_password} --email admin@maas.test --ssh-import lp:${launchpad_user}; fi"
+  - "maas apikey --username=admin | sudo tee /root/.maas-api.key; cp /root/.maas-api.key /home/ubuntu/.maas-api.key; chown ubuntu. /home/ubuntu/.maas-api.key"
+  - "maas login admin http://${MAAS_IP}:5240/MAAS/api/2.0/ $(cat /root/.maas-api.key)"
+  # Setup DHCP within MAAS
+  - "FABRIC_ID=$(maas admin subnet read $CIDR | jq -r '.vlan.fabric_id')"
+  - "PRIMARY_RACK_CONTROLLER=$(maas admin region-controllers read | jq -r '.[0].system_id')"
+  - "maas admin ipranges create type=dynamic start_ip=${LXD_IP}00 end_ip=${LXD_IP}99 gateway_ip=$LXD_IP"
+  - "maas admin vlan update $FABRIC_ID 0 dhcp_on=True primary_rack=$PRIMARY_RACK_CONTROLLER"
+  - "lxc network set lxdbr0 ipv4.dhcp true; lxc network show lxdbr0"
+  # Print out instructions for user to run post-install
+  - "echo -e '\n\n\nOnce the cloud-init portion of the machine setup has completed run the following:\n\n  /var/tmp/maas-phase2.sh\n\n\n' "
+
