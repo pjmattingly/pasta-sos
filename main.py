@@ -1,6 +1,7 @@
 import pasta_sos.util as util
 import pasta_sos.config_handler as config
 import pasta_sos.uvt_kvm_handler as uvt
+import pasta_sos.launchpad_handler as lp
 
 class UvtNotInstalled(Exception):
     pass
@@ -19,7 +20,7 @@ if __name__ == "__main__":
     if not config.exists():
         lp_username = promt_for_Launchpad_username()
 
-        if not util.launchpad_username_exists(lp_username):
+        if not lp.username_exists(lp_username):
             #see: https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
             m = f"Could not find an active launchpad username: {lp_username}. "
             m += f"Please check that 'https://launchpad.net/~{lp_username}' "
