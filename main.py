@@ -9,9 +9,6 @@ class UvtNotInstalled(Exception):
 class LaunchpadUsernameNotExist(Exception):
     pass
 
-class UnexpectedError(Exception):
-    pass
-
 def is_uvt_installed():
     return bool(shutil.which('uvt-kvm') and shutil.which('uvt-simplestreams-libvirt'))
 
