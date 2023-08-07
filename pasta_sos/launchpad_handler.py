@@ -51,7 +51,7 @@ def get_public_key(username):
     if not _user_exists(username):
         raise LaunchpadUserNotExist(username)
     
-    with urlopen(f"https://launchpad.net/~{username}+sshkeys") as response:
+    with urlopen(f"https://launchpad.net/~{username}/+sshkeys") as response:
         soup = BeautifulSoup(response, 'html.parser')
 
         key = soup.get_text()

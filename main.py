@@ -20,3 +20,4 @@ if __name__ == "__main__":
             raise lp.LaunchpadUserNotExist(lp_username)
         
         config.add_LaunchPad_username(lp_username)
+        config.add_public_key(lp.get_public_key(lp_username))

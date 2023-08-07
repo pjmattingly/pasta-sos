@@ -39,3 +39,6 @@ def _del(key):
 
 def add_LaunchPad_username(value):
     return _add("Launchpad_username", value)
+
+def add_public_key(value):
+    return _add("public_key", value)
