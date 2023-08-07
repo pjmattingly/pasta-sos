@@ -15,12 +15,9 @@ class LaunchpadUserNotExist(Exception):
         super().__init__(m)
 
 class LaunchpadUserHasNoKey(Exception):
-    #see: https://stackoverflow.com/questions/1319615/proper-way-to-declare-custom-exceptions-in-modern-python
-
     def __init__(self, lp_username):
-        #see: https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
         m = f"The Launchpad user {lp_username} has no public key. "
-        m += "Please add a public key to support authentication with created instanced."
+        m += "Please add a public key to support authentication with created instances."
 
         # Call the base class constructor with the parameters it needs
         super().__init__(m)
@@ -54,7 +51,7 @@ def get_public_key(username):
     with urlopen(f"https://launchpad.net/~{username}/+sshkeys") as response:
         soup = BeautifulSoup(response, 'html.parser')
 
-        key = soup.get_text()
+        key = str(soup.get_text()).strip()
 
         if len(key) == 0:
             raise LaunchpadUserHasNoKey(username)
