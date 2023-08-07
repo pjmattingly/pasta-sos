@@ -3,16 +3,13 @@ import pasta_sos.uvt_kvm_handler as uvt
 import pasta_sos.launchpad_handler as lp
 import pasta_sos.ssh_handler as ssh
 
-def prompt_for_Launchpad_username():
-    #see: https://docs.python.org/dev/library/functions.html#input
-    return input("Please enter a Launchpad username: ")
-
 if __name__ == "__main__":
     if not uvt.is_installed():
         raise uvt.UvtNotInstalled()
 
     if not config.exists():
-        lp_username = prompt_for_Launchpad_username()
+        #see: https://docs.python.org/dev/library/functions.html#input
+        lp_username = input("Please enter a Launchpad username: ")
 
         if not lp.username_exists(lp_username):
             raise lp.LaunchpadUserNotExist(lp_username)
