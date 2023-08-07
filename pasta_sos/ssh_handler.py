@@ -1,6 +1,16 @@
 import os
 import psutil
 
+class SSHAgentNotReady(Exception):
+    def __init__(self):
+        m = "The process `ssh-agent` does not seem to be running or setup correctly."
+        m += "\n"
+        m += "Please run: 'eval `ssh-agent`' to launch."
+        m += "\n"
+        m += "https://manpages.ubuntu.com/manpages/ssh-agent.1.html"
+        
+        super().__init__(m)
+
 def _agent_running():
     '''
     To check that public keys are on the system, we need `ssh-agent` running and
