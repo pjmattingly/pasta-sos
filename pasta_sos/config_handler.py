@@ -25,7 +25,15 @@ def add(key, value):
     return _add(key, value)
 
 def _add(key, value):
-    pass
+    with shelve.open(_default_conf) as db:
+        db[key] = value
+
+def dell(key):
+    return _del(key)
+
+def _del(key):
+    with shelve.open(_default_conf) as db:
+        del db[key]
 
 def add_LaunchPad_username(value):
-    pass
+    return _add("Launchpad_username", value)
