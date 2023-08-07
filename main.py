@@ -55,8 +55,7 @@ if __name__ == "__main__":
     
     if not has_config():
         lp_username = promt_for_Launchpad_username()
-
-        #if not launchpad_username_exists(lp_username):
+        
         if not util.launchpad_username_exists(lp_username):
             #see: https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
             m = f"Could not find an active launchpad username: {lp_username}. "
