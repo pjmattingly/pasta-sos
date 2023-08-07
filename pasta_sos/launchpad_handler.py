@@ -39,5 +39,3 @@ def _user_exists(username):
 def get_public_key(username):
     if not _user_exists(username):
         raise LaunchpadUserNotExist(username)
-
-raise LaunchpadUserNotExist("test")
