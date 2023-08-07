@@ -26,7 +26,7 @@ def add(key, value):
 
 def _add(key, value):
     _check_setup()
-    with shelve.open(_default_conf) as db:
+    with shelve.open(str(_default_conf)) as db:
         db[key] = value
 
 def dell(key):
@@ -34,7 +34,7 @@ def dell(key):
 
 def _del(key):
     _check_setup()
-    with shelve.open(_default_conf) as db:
+    with shelve.open(str(_default_conf)) as db:
         del db[key]
 
 def add_LaunchPad_username(value):
