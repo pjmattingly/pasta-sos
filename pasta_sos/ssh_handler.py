@@ -2,6 +2,9 @@ import os
 import psutil
 from pathlib import Path
 
+class KeyIsNotOnSystem(Exception):
+    pass
+
 def is_key_on_system(key):
     _key = str(key).strip()
 
