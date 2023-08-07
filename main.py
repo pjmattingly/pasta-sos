@@ -5,6 +5,8 @@ from urllib.request import urlopen
 from urllib.error import HTTPError
 import json
 
+import pasta_sos.util as util
+
 class UvtNotInstalled(Exception):
     pass
 
@@ -23,25 +25,6 @@ def has_config():
 def promt_for_Launchpad_username():
     #see: https://docs.python.org/dev/library/functions.html#input
     return input("Please enter a Launchpad username: ")
-
-def launchpad_username_exists(username):
-    try:
-        with urlopen(f"https://launchpad.net/~{username}") as response:
-            soup = BeautifulSoup(response, 'html.parser')
-            
-            #check for unknown user, but with existing Launchpad page
-            #e.g., https://launchpad.net/~test
-            #see: https://en.wikipedia.org/wiki/Beautiful_Soup_(HTML_parser)
-            #and: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#quick-start
-            if "does not use Launchpad" in soup.get_text():
-                
-                return False
-    except HTTPError:
-        #check for unknown user (404); e.g., `some-fake-name`
-        #or other errors response.status >= 400
-        return False
-
-    return True
 
 def create_pasta_sos_dir():
     _config_dir = Path.home() / ".pasta-sos"
@@ -73,7 +56,8 @@ if __name__ == "__main__":
     if not has_config():
         lp_username = promt_for_Launchpad_username()
 
-        if not launchpad_username_exists(lp_username):
+        #if not launchpad_username_exists(lp_username):
+        if not util.launchpad_username_exists(lp_username):
             #see: https://stackoverflow.com/questions/10660435/how-do-i-split-the-definition-of-a-long-string-over-multiple-lines
             m = f"Could not find an active launchpad username: {lp_username}. "
             m += f"Please check that 'https://launchpad.net/~{lp_username}' "
