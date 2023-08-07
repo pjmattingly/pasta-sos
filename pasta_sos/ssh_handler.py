@@ -1,5 +1,3 @@
-import os
-import psutil
 from pathlib import Path
 
 class KeyIsNotOnSystem(Exception):
