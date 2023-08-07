@@ -14,7 +14,7 @@ def _dir_exists():
 def _conf_exists():
     return _default_conf.exists()
 
-def setup():
+def _check_setup():
     if not _dir_exists():
         _default_dir.mkdir()
     
@@ -25,6 +25,7 @@ def add(key, value):
     return _add(key, value)
 
 def _add(key, value):
+    _check_setup()
     with shelve.open(_default_conf) as db:
         db[key] = value
 
@@ -32,6 +33,7 @@ def dell(key):
     return _del(key)
 
 def _del(key):
+    _check_setup()
     with shelve.open(_default_conf) as db:
         del db[key]
 
